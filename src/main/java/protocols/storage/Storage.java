@@ -12,6 +12,7 @@ import protocols.timers.*;
 import pt.unl.fct.di.novasys.babel.core.GenericProtocol;
 import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
+import pt.unl.fct.di.novasys.babel.generic.ProtoReply;
 import pt.unl.fct.di.novasys.network.data.Host;
 
 import java.io.IOException;
@@ -52,7 +53,7 @@ public class Storage extends GenericProtocol {
 
         /*--------------------- Register Reply Handlers ----------------------------- */
         //TODO - remove null
-        registerReplyHandler(LookupRequest.REQUEST_ID, null);
+        registerReplyHandler(LookupRequest.REQUEST_ID, this::uponReply);
 
         /*--------------------- Register Notification Handlers ----------------------------- */
         //subscribeNotification(NeighbourUp.NOTIFICATION_ID, this::uponNeighbourUp);
@@ -78,9 +79,7 @@ public class Storage extends GenericProtocol {
         registerMessageSerializer(cId, SaveMessage.MSG_ID, SaveMessage.serializer);
         /*---------------------- Register Message Handlers -------------------------- */
         try {
-            //TODO - remove null
-            registerMessageHandler(cId, SaveMessage.MSG_ID, null, this::uponMsgFail);
-            //registerMessageHandler(cId, FloodMessage.MSG_ID, this::uponFloodMessage, this::uponMsgFail);
+            registerMessageHandler(cId, SaveMessage.MSG_ID, this::uponSaveMessage, this::uponMsgFail);
         } catch (HandlerRegistrationException e) {
             logger.error("Error registering message handler: " + e.getMessage());
             e.printStackTrace();
@@ -118,10 +117,10 @@ public class Storage extends GenericProtocol {
     }
 
     /*--------------------------------- Replies ---------------------------------------- */
-    //TODO - check if right
-    private void uponLookupResponse (LookupResponse response, byte[] content, short sourceProto) {
-
+    //TODO - check if right -> how to pass content
+    private void uponReply(LookupResponse response, short sourceProto) {
         Host host = response.getHost();
+        byte[] content=null;
         if (host.equals(me)) {
             store.put(response.getObjId(), content);
         } else {
@@ -130,21 +129,13 @@ public class Storage extends GenericProtocol {
                     response.getHost(), content);
             sendMessage(requestMsg, host);
         }
-
-        //make sense? reply UID = request.getRequestUID
-        //StoreOKReply storeOk = new StoreOKReply(request.getName(), request.getRequestUID());
-        //sendReply(storeOk, sourceProto);
     }
 
     /*--------------------------------- Messages ---------------------------------------- */
-    private void uponSaveMessage (SaveMessage msg){
+    private void uponSaveMessage(SaveMessage msg, Host host, short i, int i1) {
         store.put(msg.getObjId(), msg.getContent());
-
-        //RetrieveOkReply
-        //RetrieveOKReply replyOk = new RetrieveOKReply(request.getName(), request.getRequestUID(),null);
-        //sendMessage(replyOk,null);
     }
-
+    
     private void uponMsgFail(ProtoMessage msg, Host host, short destProto,
                              Throwable throwable, int channelId) {
         //If a message fails to be sent, for whatever reason, log the message and the reason
