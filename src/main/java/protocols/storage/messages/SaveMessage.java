@@ -53,7 +53,12 @@ public class SaveMessage extends ProtoMessage {
             out.writeLong(saveMessage.mid.getMostSignificantBits());
             out.writeLong(saveMessage.mid.getLeastSignificantBits());
             Host.serializer.serialize(saveMessage.getHost(), out);
-            out.writeShort(saveMessage.getId());//TODO - Check
+            out.writeShort(saveMessage.getId());
+            byte[] objId = saveMessage.getObjId().toByteArray();
+            out.writeInt(objId.length);
+            if (objId.length > 0) {
+                out.writeBytes(objId);
+            }
             out.writeInt(saveMessage.content.length);
             if (saveMessage.content.length > 0) {
                 out.writeBytes(saveMessage.content);
@@ -66,14 +71,19 @@ public class SaveMessage extends ProtoMessage {
             long secondLong = in.readLong();
             UUID mid = new UUID(firstLong, secondLong);
             Host sender = Host.serializer.deserialize(in);
-            short toDeliver = in.readShort();
+            //short toDeliver = in.readShort();
             int size = in.readInt();
+            byte[] objIdArr = new byte[size];
+            if (size > 0)
+                in.readBytes(objIdArr);
+            BigInteger objId = new BigInteger(objIdArr);
+            size = in.readInt();
             byte[] content = new byte[size];
             if (size > 0)
                 in.readBytes(content);
 
             //TODO - Check
-            return new SaveMessage(mid, null, null, content);
+            return new SaveMessage(mid, objId, sender, content);
         }
     };
 }

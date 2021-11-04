@@ -13,14 +13,14 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.*;
 
+import static utils.HashGenerator.generateHash;
+
 public class Kelips extends GenericProtocol {
     private static final Logger logger = LogManager.getLogger(Kelips.class);
 
     //Protocol information, to register in babel
     public final static short PROTOCOL_ID = 100;
     public final static String PROTOCOL_NAME = "Kelips";
-    //TODO - fix this
-    private static final int AFFINITYGROUP_NUM = 4;
 
     private final Host me;
     private Random rnd;
@@ -28,11 +28,12 @@ public class Kelips extends GenericProtocol {
     private final Set<Host> agView;
     private final Map<BigInteger, Host[]> contacts;
     private final Map<BigInteger, Host> filetuples;
+    private int agNum = 4;
     private final int myAG;
 
     private final int channelId;
 
-    public Kelips(Host self) throws HandlerRegistrationException {
+    public Kelips(Host self, int agNum) throws HandlerRegistrationException {
         super(PROTOCOL_NAME, PROTOCOL_ID);
         this.me = self;
         rnd = new Random();
@@ -42,7 +43,9 @@ public class Kelips extends GenericProtocol {
         filetuples = new HashMap<>();
         contacts = new HashMap<>();
         agView = new HashSet<>();
-        myAG = 1; //TODO - fix this
+        this.agNum = agNum;
+        myAG = generateHash(me.toString()).intValue() % this.agNum; //TODO - check this
+
 
         /*--------------------- Register Request Handlers ----------------------------- */
         registerRequestHandler(LookupRequest.REQUEST_ID, this::uponLookupRequest);
@@ -58,8 +61,8 @@ public class Kelips extends GenericProtocol {
 
     /*--------------------------------- Requests ---------------------------------------- */
     private void uponLookupRequest(LookupRequest lookupRequest, short sourceProto) {
-        //TODO
-        int fAG = lookupRequest.getObjID().intValue() % AFFINITYGROUP_NUM;
+        //TODO - check bigInteger to int
+        int fAG = lookupRequest.getObjID().intValue() % agNum;
         Host host;
         if (fAG == myAG) {
             host = filetuples.get(lookupRequest.getObjID());
@@ -71,6 +74,7 @@ public class Kelips extends GenericProtocol {
         } else { //file does not belong my AG
             Host contact = contacts.get(fAG)[rnd.nextInt(contacts.get(fAG).length)];
 
+            //TODO - send msg
             sendMessage(null, contact);
         }
 
