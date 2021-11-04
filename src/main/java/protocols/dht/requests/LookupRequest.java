@@ -28,7 +28,7 @@ public class LookupRequest extends ProtoRequest {
 		return this.uid;
 	}
 	
-	public BigInteger getID() {
+	public BigInteger getObjID() {
 		return this.id;
 	}
 

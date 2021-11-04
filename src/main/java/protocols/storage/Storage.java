@@ -12,7 +12,6 @@ import protocols.timers.*;
 import pt.unl.fct.di.novasys.babel.core.GenericProtocol;
 import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
-import pt.unl.fct.di.novasys.babel.generic.ProtoReply;
 import pt.unl.fct.di.novasys.network.data.Host;
 
 import java.io.IOException;
@@ -52,8 +51,7 @@ public class Storage extends GenericProtocol {
         registerRequestHandler(RetrieveRequest.REQUEST_ID, this::uponRetrieveRequest);
 
         /*--------------------- Register Reply Handlers ----------------------------- */
-        //TODO - remove null
-        registerReplyHandler(LookupRequest.REQUEST_ID, this::uponReply);
+        registerReplyHandler(LookupRequest.REQUEST_ID, this::uponLookupResponse);
 
         /*--------------------- Register Notification Handlers ----------------------------- */
         //subscribeNotification(NeighbourUp.NOTIFICATION_ID, this::uponNeighbourUp);
@@ -118,9 +116,9 @@ public class Storage extends GenericProtocol {
 
     /*--------------------------------- Replies ---------------------------------------- */
     //TODO - check if right -> how to pass content
-    private void uponReply(LookupResponse response, short sourceProto) {
+    private void uponLookupResponse(LookupResponse response, short sourceProto) {
         Host host = response.getHost();
-        byte[] content=null;
+        byte[] content= cache.get(response.getObjId());
         if (host.equals(me)) {
             store.put(response.getObjId(), content);
         } else {

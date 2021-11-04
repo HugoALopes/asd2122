@@ -19,13 +19,16 @@ public class Kelips extends GenericProtocol {
     //Protocol information, to register in babel
     public final static short PROTOCOL_ID = 100;
     public final static String PROTOCOL_NAME = "Kelips";
+    //TODO - fix this
+    private static final int AFFINITYGROUP_NUM = 4;
 
     private final Host me;
-    private final Random rnd;
+    private Random rnd;
 
     private final Set<Host> agView;
     private final Map<BigInteger, Host[]> contacts;
     private final Map<BigInteger, Host> filetuples;
+    private final int myAG;
 
     private final int channelId;
 
@@ -39,6 +42,7 @@ public class Kelips extends GenericProtocol {
         filetuples = new HashMap<>();
         contacts = new HashMap<>();
         agView = new HashSet<>();
+        myAG = 1; //TODO - fix this
 
         /*--------------------- Register Request Handlers ----------------------------- */
         registerRequestHandler(LookupRequest.REQUEST_ID, this::uponLookupRequest);
@@ -55,6 +59,21 @@ public class Kelips extends GenericProtocol {
     /*--------------------------------- Requests ---------------------------------------- */
     private void uponLookupRequest(LookupRequest lookupRequest, short sourceProto) {
         //TODO
+        int fAG = lookupRequest.getObjID().intValue() % AFFINITYGROUP_NUM;
+        Host host;
+        if (fAG == myAG) {
+            host = filetuples.get(lookupRequest.getObjID());
+
+            if (host == null){
+                //TODO - host <- gossip ( fAG, (GETHOST, id) )
+            }
+
+        } else { //file does not belong my AG
+            Host contact = contacts.get(fAG)[rnd.nextInt(contacts.get(fAG).length)];
+
+            sendMessage(null, contact);
+        }
+
     }
 
     /* --------------------------------- Metrics ---------------------------- */
