@@ -115,7 +115,7 @@ public class Storage extends GenericProtocol {
     }
 
     /*--------------------------------- Replies ---------------------------------------- */
-    //TODO - check if right -> how to pass content
+    //TODO - check if right
     private void uponLookupResponse(LookupResponse response, short sourceProto) {
         Host host = response.getHost();
         byte[] content= cache.get(response.getObjId());
