@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="AnalysisUIOptions">
-    <option name="SCOPE_TYPE" value="3" />
-  </component>
   <component name="AutoImportSettings">
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a0bbf4ba-7463-49e9-98fd-bb596853f106" name="Changes" comment="">
+<<<<<<< HEAD
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/protocols/dht/Kelips.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/dht/Kelips.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/protocols/dht/requests/LookupRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/dht/requests/LookupRequest.java" afterDir="false" />
+=======
+      <change afterPath="$PROJECT_DIR$/.idea/uiDesigner.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+>>>>>>> parent of cf998ca... storage big fixes + small start kelips + timers
       <change beforePath="$PROJECT_DIR$/src/main/java/protocols/storage/Storage.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/storage/Storage.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -28,17 +30,6 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitSEFilterConfiguration">
-    <file-type-list>
-      <filtered-out-file-type name="LOCAL_BRANCH" />
-      <filtered-out-file-type name="REMOTE_BRANCH" />
-      <filtered-out-file-type name="TAG" />
-      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
-    </file-type-list>
-  </component>
-  <component name="ProblemsViewState">
-    <option name="selectedIndex" value="2" />
-  </component>
   <component name="ProjectId" id="20MdTZBVqSTPbRz3HGxKHQ5f5XW" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
@@ -50,16 +41,8 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/src/main/java/protocols/dht" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="run.code.analysis.last.selected.profile" value="pProject Default" />
-  </component>
-  <component name="RecentsManager">
-    <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/src/main/java/protocols/dht" />
-    </key>
-    <key name="CopyClassDialog.RECENTS_KEY">
-      <recent name="protocols.timers" />
-    </key>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
@@ -72,7 +55,11 @@
       <workItem from="1635858416426" duration="817000" />
       <workItem from="1635867180736" duration="8419000" />
       <workItem from="1635877586209" duration="1382000" />
+<<<<<<< HEAD
       <workItem from="1635937999052" duration="21521000" />
+=======
+      <workItem from="1635937999052" duration="6989000" />
+>>>>>>> parent of cf998ca... storage big fixes + small start kelips + timers
     </task>
     <servers />
   </component>
