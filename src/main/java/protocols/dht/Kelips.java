@@ -2,6 +2,7 @@ package protocols.dht;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import protocols.dht.messages.GetHostMessage;
 import protocols.dht.requests.LookupRequest;
 import protocols.timers.*;
 import pt.unl.fct.di.novasys.babel.core.GenericProtocol;
@@ -46,6 +47,7 @@ public class Kelips extends GenericProtocol {
         this.agNum = agNum;
         myAG = generateHash(me.toString()).intValue() % this.agNum; //TODO - check this
 
+        //TODO - register messages <- copy from storage
 
         /*--------------------- Register Request Handlers ----------------------------- */
         registerRequestHandler(LookupRequest.REQUEST_ID, this::uponLookupRequest);
@@ -56,7 +58,8 @@ public class Kelips extends GenericProtocol {
 
     @Override
     public void init(Properties properties) throws HandlerRegistrationException, IOException {
-        //TODO - do stuff
+        //TODO
+        // properties must have contact to join system
     }
 
     /*--------------------------------- Requests ---------------------------------------- */
@@ -74,11 +77,23 @@ public class Kelips extends GenericProtocol {
         } else { //file does not belong my AG
             Host contact = contacts.get(fAG)[rnd.nextInt(contacts.get(fAG).length)];
 
-            //TODO - send msg
-            sendMessage(null, contact);
+            //TODO - send msg - GETHOST
+            GetHostMessage ghMsg = new GetHostMessage(null,lookupRequest.getObjID());
+            sendMessage(ghMsg, contact);
         }
+    }
+
+    /* --------------------------------- Messages ---------------------------- */
+
+    private void uponGetHostMessage(){
+        //TODO
+    }
+
+    private void uponGetHostReplyMessage(){
+        //TODO
 
     }
+
 
     /* --------------------------------- Metrics ---------------------------- */
 
