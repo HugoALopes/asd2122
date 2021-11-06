@@ -3,9 +3,11 @@ package protocols.dht;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import protocols.dht.messages.GetHostMessage;
-import protocols.dht.replies.KelipsReplyJoinRequest;
+import protocols.dht.messages.KelipsInformReply;
+import protocols.dht.messages.KelipsInformRequest;
+import protocols.dht.messages.KelipsJoinRequest;
+import protocols.dht.messages.KelipsJoinReply;
 import protocols.dht.replies.LookupResponse;
-import protocols.dht.requests.KelipsJoinRequest;
 import protocols.dht.requests.LookupRequest;
 import protocols.timers.*;
 import pt.unl.fct.di.novasys.babel.core.GenericProtocol;
@@ -13,6 +15,7 @@ import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
 import pt.unl.fct.di.novasys.channel.tcp.events.ChannelMetrics;
 import pt.unl.fct.di.novasys.channel.tcp.events.OutConnectionUp;
 import pt.unl.fct.di.novasys.network.data.Host;
+import utils.HashGenerator;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 
 import java.io.IOException;
@@ -25,32 +28,43 @@ import static utils.HashGenerator.generateHash;
 public class Kelips extends GenericProtocol {
     private static final Logger logger = LogManager.getLogger(Kelips.class);
 
+    //enum para os tempos de razao para a conexao estar pendente
     public enum Reason {
-        NEW_JOIN
+        NEW_JOIN, JOIN, INFORM, INFORM_DONE
     }
 
     // Protocol information, to register in babel
     public final static short PROTOCOL_ID = 100;
     public final static String PROTOCOL_NAME = "Kelips";
+    private final int channelId;
 
+
+    //numero de contactos 
+    private int agNum = 4;
+
+    //informaçao do proprio
     private final Host me;
+    private final int myAG;
     private Random rnd;
 
+    //Conexoes pendentes ainda nao estabelecidas
     private final Map<Host, Reason> pending;
 
-    private final Set<Host> agView;
-    private final Map<BigInteger, Host[]> contacts;
-    private final Map<BigInteger, Host> filetuples;
-    private int agNum = 4;
-    private final int myAG;
-
-    private final int channelId;
+    //Soft state do no
+    private Set<Host> agView;
+    private Map<Integer, ArrayList<Host>> contacts;
+    private Map<Integer, Host> filetuples;
+    
+ 
 
     public Kelips(Host self, int agNum) throws HandlerRegistrationException {
         super(PROTOCOL_NAME, PROTOCOL_ID);
+        
         this.me = self;
         rnd = new Random();
-
+        this.agNum = agNum;
+        myAG = generateHash(me.toString()).intValue() % this.agNum; // TODO - check this
+        
         channelId = 0;
 
         pending = new HashMap<>();
@@ -58,14 +72,17 @@ public class Kelips extends GenericProtocol {
         filetuples = new HashMap<>();
         contacts = new HashMap<>();
         agView = new HashSet<>();
-        this.agNum = agNum;
-        myAG = generateHash(me.toString()).intValue() % this.agNum; // TODO - check this
+       
+    
 
         /*--------------------- Register Message Handlers ----------------------------- */
         registerMessageHandler(channelId, KelipsJoinRequest.REQUEST_ID, this::uponJoinMessage, this::uponMsgFail);
+        registerMessageHandler(channelId, KelipsJoinReply.REQUEST_ID, this::uponJoinReplyMessage, this::uponMsgFail);
+        registerMessageHandler(channelId, KelipsInformRequest.REQUEST_ID, this::uponInformMessage, this::uponMsgFail);
+        registerMessageHandler(channelId, KelipsInformReply.REQUEST_ID, this::uponInformReplyMessage, this::uponMsgFail);
+
 
         /*--------------------- Register Reply Handlers ----------------------------- */
-        registerReplyHandler(KelipsReplyJoinRequest.REQUEST_ID, this::uponJoinReplyMessage);
         registerReplyHandler(LookupResponse.REPLY_ID, this::uponLookupReplyMessage);
 
         /*--------------------- Register Request Handlers ----------------------------- */
@@ -102,8 +119,20 @@ public class Kelips extends GenericProtocol {
         logger.debug("Out Connection to {} is up.", peer);
         if (reason != null) {
             switch (reason) {
-            case NEW_JOIN: // SEND JOIN REQUEST
+            case NEW_JOIN: // SEND JOIN REQUEST DE UM NOVO NO
                 sendMessage(new KelipsJoinRequest(this.me), peer);
+                break;
+            case JOIN: //QUANDO UM NO RECEBE UM JOIN REQUEST ENVIA A SUA VIEW E A SI MESMO
+                KelipsJoinReply reply = new KelipsJoinReply(agView, this.me);
+                sendMessage(reply, peer);
+                break;
+            case INFORM: //DAR O NOVO NO A CONHECER AOS RESTANTES
+                KelipsInformRequest msg = new KelipsInformRequest();
+                sendMessage(msg, peer);
+                break;
+            case INFORM_DONE:
+                KelipsInformReply replyI = new KelipsInformReply();
+                sendMessage(replyI, peer);
                 break;
             default:
                 break;
@@ -113,17 +142,85 @@ public class Kelips extends GenericProtocol {
     }
 
     /* --------------------------------- Reply ---------------------------- */
-    private void uponJoinReplyMessage(KelipsReplyJoinRequest msg, short sourceProto){
-
-    }
-
     private void uponLookupReplyMessage(LookupResponse msg, short sourceProto){
 
     }
 
     /* --------------------------------- Messages ---------------------------- */
-    private void uponJoinMessage(KelipsJoinRequest msg, Host from, short sourceProto, int channelId) {
+    private void uponInformReplyMessage(KelipsInformRequest msg, Host from, short sourceProto, int channelId){
 
+    }
+
+    private void uponInformMessage(KelipsInformRequest msg, Host from, short sourceProto, int channelId) {
+        BigInteger hash = HashGenerator.generateHash(from.toString());
+        int fromID = (hash.intValue() % this.agNum);
+        //Sao do mesmo afinnity group
+        if(fromID == myAG){
+            agView.add(from);
+        } //Sao de grupos diferentes
+        else{
+            ArrayList<Host> aux = contacts.get(fromID);
+            if(aux == null){
+                aux = new ArrayList<Host>();
+                aux.add(from);
+            }
+            else if(aux.size() < this.agNum){
+                aux.add(from);
+            }
+            contacts.put(fromID, aux);
+        }   
+        connect(from, Reason.INFORM_DONE);
+    }
+
+    private void uponJoinReplyMessage(KelipsJoinReply msg, Host from, short sourceProto, int channelId) {
+        BigInteger hash = HashGenerator.generateHash(from.toString());
+        int fromID = (hash.intValue() % this.agNum);
+
+        if(fromID == myAG) {
+            agView = msg.getAgView();
+            for(Host h: agView)
+                connect(h, Reason.INFORM);
+        }else{
+            ArrayList<Host> aux = contacts.get(fromID);
+            if(aux == null){
+                aux = new ArrayList<Host>();
+                aux.add(from);
+            }
+            else if(aux.size() < this.agNum){
+                aux.add(from);
+            }
+
+            Iterator<Host> it = msg.getAgView().iterator();
+            while(aux.size() < this.agNum && it.hasNext())
+                aux.add(it.next());
+
+            contacts.put(fromID, aux);
+            for(Host h: aux)
+                connect(h, Reason.INFORM);
+        }
+
+
+    }
+
+    private void uponJoinMessage(KelipsJoinRequest msg, Host from, short sourceProto, int channelId) {
+        BigInteger hash = HashGenerator.generateHash(from.toString());
+        int fromID = (hash.intValue() % this.agNum);
+        //Sao do mesmo afinnity group
+        if(fromID == myAG){
+            agView.add(from);
+        } //Sao de grupos diferentes
+        else{
+            ArrayList<Host> aux = contacts.get(fromID);
+            if(aux == null){
+                aux = new ArrayList<Host>();
+                aux.add(from);
+            }
+            else if(aux.size() < this.agNum){
+                aux.add(from);
+            }
+            contacts.put(fromID, aux);
+        }   
+        connect(from, Reason.JOIN);
     }
 
     private void uponMsgFail(ProtoMessage msg, Host host, short destProto,
@@ -144,11 +241,11 @@ public class Kelips extends GenericProtocol {
             }
 
         } else { // file does not belong my AG
-            Host contact = contacts.get(fAG)[rnd.nextInt(contacts.get(fAG).length)];
+            //Host contact = contacts.get(fAG)[rnd.nextInt(contacts.get(fAG).length)];
 
             // TODO - send msg - GETHOST
             GetHostMessage ghMsg = new GetHostMessage(null, lookupRequest.getObjID());
-            sendMessage(ghMsg, contact);
+            //sendMessage(ghMsg, contact);
         }
     }
 

@@ -1,19 +1,19 @@
-package protocols.dht.replies;
+package protocols.dht.messages;
 
 import java.util.Set;
 import java.util.UUID;
 
-import pt.unl.fct.di.novasys.babel.generic.ProtoReply;
+import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 import pt.unl.fct.di.novasys.network.data.Host;
 
-public class KelipsReplyJoinRequest extends ProtoReply{
+public class KelipsJoinReply extends ProtoMessage{
     public final static short REQUEST_ID = 1051;
 
     private UUID uid;
     private Set<Host> agView;
     private Host sender;
 
-    public KelipsReplyJoinRequest(Set<Host> agView, Host sender) {
+    public KelipsJoinReply(Set<Host> agView, Host sender) {
         super(REQUEST_ID);
         this.agView = agView;
         this.sender = sender;

@@ -1,4 +1,4 @@
-package protocols.dht.requests;
+package protocols.dht.messages;
 
 import java.util.UUID;
 
