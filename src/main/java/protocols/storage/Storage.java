@@ -16,6 +16,9 @@ import pt.unl.fct.di.novasys.network.data.Host;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -32,10 +35,10 @@ public class Storage extends GenericProtocol {
 
     public static final short DHT_PROTOCOL = 100;
 
-    private static final int CACHE_TIMEOUT = 0;
+    private static final int CACHE_TIMEOUT = 50000;
     private final Host me;
 
-    private final Map<BigInteger, byte[]> cache;
+    private final Map<BigInteger, CacheContent> cache;
     private final Map<BigInteger, byte[]> store;
 
     private boolean channelReady;
@@ -65,6 +68,8 @@ public class Storage extends GenericProtocol {
     @Override
     public void init(Properties properties) {
 
+        //setup timer to delete cache
+        setupPeriodicTimer(new CacheDeleteTimer(), CACHE_TIMEOUT, CACHE_TIMEOUT);
     }
 
     //TODO - check!! -> copied from example
@@ -92,10 +97,7 @@ public class Storage extends GenericProtocol {
 
         BigInteger id = generateHash(request.getName());
         byte[] content = request.getContent();
-        cache.put(id, content);
-
-        //TODO - timer to delete cache -> falta associar com o obj certo
-        setupTimer(new CacheDeleteTimer(), CACHE_TIMEOUT);
+        cache.put(id, new CacheContent(LocalDateTime.now(),content));
 
         //find "saver" host
         LookupRequest getHost = new LookupRequest(id);
@@ -105,7 +107,7 @@ public class Storage extends GenericProtocol {
     private void uponRetrieveRequest(RetrieveRequest request, short sourceProto) {
         BigInteger id = generateHash(request.getName());
 
-        byte[] content = ((cache.get(id) == null)?store.get(id):cache.get(id));
+        byte[] content = ((cache.get(id) == null)?store.get(id):cache.get(id).getContent());
 
         if (content == null) {
             //TODO - not sure
@@ -118,7 +120,7 @@ public class Storage extends GenericProtocol {
     //TODO - check if right
     private void uponLookupResponse(LookupResponse response, short sourceProto) {
         Host host = response.getHost();
-        byte[] content= cache.get(response.getObjId());
+        byte[] content= cache.get(response.getObjId()).getContent();
         if (host.equals(me)) {
             store.put(response.getObjId(), content);
         } else {
@@ -142,6 +144,12 @@ public class Storage extends GenericProtocol {
 
     /*--------------------------------- Timers ---------------------------------------- */
     private void uponCacheDeleteTimer(CacheDeleteTimer timer, long timerId) {
-        //TODO - delete cache
+        LocalDateTime present = LocalDateTime.now();
+        cache.forEach((id,obj) -> {
+            if (obj.getTime().isBefore(present)) {
+                cache.remove(id);
+                logger.info("Removed from cache {}", id);
+            }
+        });
     }
 }
