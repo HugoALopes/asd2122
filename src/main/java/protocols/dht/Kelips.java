@@ -73,7 +73,7 @@ public class Kelips extends GenericProtocol {
         this.me = self;
         rnd = new Random();
         this.agNum = Integer.parseInt(props.getProperty("agNum"));
-        myAG = generateHash(me.toString()).intValue() % this.agNum; // TODO - check this
+        myAG = generateHash(me.toString()).mod(BigInteger.valueOf(agNum)).intValueExact();
         
         channelId = 0;
 
@@ -82,8 +82,7 @@ public class Kelips extends GenericProtocol {
         filetuples = new HashMap<>();
         contacts = new HashMap<>();
         agView = new HashSet<>();
-       
-    
+
         
         String cMetricsInterval = props.getProperty("channel_metrics_interval", "10000"); //10 seconds
 
@@ -184,7 +183,7 @@ public class Kelips extends GenericProtocol {
         logger.debug("Out Connection to {} is down cause {}", peer, event.getCause());
         
         BigInteger hash = HashGenerator.generateHash(peer.toString());
-        int fromID = (hash.intValue() % this.agNum);
+        int fromID = hash.mod(BigInteger.valueOf(this.agNum)).intValueExact();
         this.removeContact(fromID, peer);
     }
 
@@ -193,7 +192,7 @@ public class Kelips extends GenericProtocol {
         logger.debug("Connection to {} failed cause: {}", peer, event.getCause());
 
         BigInteger hash = HashGenerator.generateHash(peer.toString());
-        int fromID = (hash.intValue() % this.agNum);
+        int fromID = hash.mod(BigInteger.valueOf(this.agNum)).intValueExact();
         this.removeContact(fromID, peer);
     }
 
@@ -209,7 +208,7 @@ public class Kelips extends GenericProtocol {
         logger.debug("In Connection to {} is down cause {}", peer, event.getCause());
 
         BigInteger hash = HashGenerator.generateHash(peer.toString());
-        int fromID = (hash.intValue() % this.agNum);
+        int fromID = hash.mod(BigInteger.valueOf(this.agNum)).intValueExact();
         this.removeContact(fromID, peer);
     }
 
@@ -222,7 +221,7 @@ public class Kelips extends GenericProtocol {
     /* --------------------------------- Messages ---------------------------- */
     private void uponInformMessage(KelipsInformRequest msg, Host from, short sourceProto, int channelId) {
         BigInteger hash = HashGenerator.generateHash(from.toString());
-        int fromID = (hash.intValue() % this.agNum);
+        int fromID = hash.mod(BigInteger.valueOf(this.agNum)).intValueExact();
         //Sao do mesmo afinnity group
         if(fromID == myAG){
             agView.add(from);
@@ -255,7 +254,7 @@ public class Kelips extends GenericProtocol {
 
     private void uponJoinMessage(KelipsJoinRequest msg, Host from, short sourceProto, int channelId) {
         BigInteger hash = HashGenerator.generateHash(from.toString());
-        int fromID = (hash.intValue() % this.agNum);
+        int fromID = hash.mod(BigInteger.valueOf(this.agNum)).intValueExact();
         
         //Sao do mesmo afinnity group
         if(fromID == myAG){

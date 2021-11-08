@@ -1,8 +1,13 @@
 package protocols.storage;
 
 import channel.notifications.ChannelCreated;
+import membership.common.NeighbourDown;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import protocols.dht.Kelips;
+import protocols.dht.messages.KelipsInformRequest;
+import protocols.dht.messages.KelipsJoinReply;
+import protocols.dht.messages.KelipsJoinRequest;
 import protocols.dht.replies.LookupResponse;
 import protocols.dht.requests.LookupRequest;
 import protocols.storage.messages.SaveMessage;
@@ -12,7 +17,10 @@ import protocols.timers.*;
 import pt.unl.fct.di.novasys.babel.core.GenericProtocol;
 import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
+import pt.unl.fct.di.novasys.channel.tcp.TCPChannel;
+import pt.unl.fct.di.novasys.channel.tcp.events.*;
 import pt.unl.fct.di.novasys.network.data.Host;
+import utils.HashGenerator;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -22,6 +30,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import static utils.HashGenerator.generateHash;
 
@@ -37,17 +46,39 @@ public class Storage extends GenericProtocol {
 
     private static final int CACHE_TIMEOUT = 50000;
     private final Host me;
+    private int channelId;
 
     private final Map<BigInteger, CacheContent> cache;
     private final Map<BigInteger, byte[]> store;
 
     private boolean channelReady;
 
-    public Storage(Properties properties, Host myself) throws IOException, HandlerRegistrationException {
+    public Storage(Properties props, Host myself) throws IOException, HandlerRegistrationException {
         super(PROTOCOL_NAME, PROTOCOL_ID);
         me = myself;
         cache = new HashMap<>();
         store = new HashMap<>();
+
+        channelId = 0;
+
+        String cMetricsInterval = props.getProperty("channel_metrics_interval", "10000"); //10 seconds
+
+        //Create a properties object to setup channel-specific properties. See the channel description for more details.
+        Properties channelProps = new Properties();
+        channelProps.setProperty(TCPChannel.ADDRESS_KEY, props.getProperty("address")); //The address to bind to
+        channelProps.setProperty(TCPChannel.PORT_KEY, props.getProperty("port")); //The port to bind to
+        channelProps.setProperty(TCPChannel.METRICS_INTERVAL_KEY, cMetricsInterval); //The interval to receive channel metrics
+        channelProps.setProperty(TCPChannel.HEARTBEAT_INTERVAL_KEY, "1000"); //Heartbeats interval for established connections
+        channelProps.setProperty(TCPChannel.HEARTBEAT_TOLERANCE_KEY, "3000"); //Time passed without heartbeats until closing a connection
+        channelProps.setProperty(TCPChannel.CONNECT_TIMEOUT_KEY, "1000"); //TCP connect timeout
+        channelId = createChannel(TCPChannel.NAME, channelProps); //Create the channel with the given properties
+
+        /*--------------------- TCPEvents ----------------------------- */
+        registerChannelEventHandler(channelId, OutConnectionUp.EVENT_ID, this::uponOutConnectionUp);
+        registerChannelEventHandler(channelId, OutConnectionDown.EVENT_ID, this::uponOutConnectionDown);
+        registerChannelEventHandler(channelId, OutConnectionFailed.EVENT_ID, this::uponOutConnectionFailed);
+        registerChannelEventHandler(channelId, InConnectionUp.EVENT_ID, this::uponInConnectionUp);
+        registerChannelEventHandler(channelId, InConnectionDown.EVENT_ID, this::uponInConnectionDown);
 
         /*--------------------- Register Request Handlers ----------------------------- */
         registerRequestHandler(StoreRequest.REQUEST_ID, this::uponStoreRequest);
@@ -151,5 +182,34 @@ public class Storage extends GenericProtocol {
                 logger.info("Removed from cache {}", id);
             }
         });
+    }
+
+    /*--------------------------------- TCP ---------------------------------------- */
+    // If a connection is successfully established, this event is triggered.
+    private void uponOutConnectionUp(OutConnectionUp event, int channelId) {
+        Host peer = event.getNode();
+        logger.debug("Out Connection to {} is up.", peer);
+    }
+
+    private void uponOutConnectionDown(OutConnectionDown event, int channelId) {
+        Host peer = event.getNode();
+        logger.debug("Out Connection to {} is down cause {}", peer, event.getCause());
+    }
+
+    private void uponOutConnectionFailed(OutConnectionFailed<ProtoMessage> event, int channelId) {
+        Host peer = event.getNode();
+        logger.debug("Connection to {} failed cause: {}", peer, event.getCause());
+    }
+
+
+    private void uponInConnectionUp(InConnectionUp event, int channelId) {
+        Host peer = event.getNode();
+        logger.debug("In Connection from {} is up", peer);
+    }
+
+    //A connection someone established to me is disconnected.
+    private void uponInConnectionDown(InConnectionDown event, int channelId) {
+        Host peer = event.getNode();
+        logger.debug("In Connection to {} is down cause {}", peer, event.getCause());
     }
 }
