@@ -9,24 +9,18 @@ public class DeliverNotification extends ProtoNotification {
     public static final short NOTIFICATION_ID = 201;
 
     private final Host sender;
-    private final Host aux;
     private final UUID msgId;
     private final byte[] msg;
 
-    public DeliverNotification(UUID msgId, Host sender, byte[] msg, Host aux) {
+    public DeliverNotification(UUID msgId, Host sender, byte[] msg) {
         super(NOTIFICATION_ID);
         this.msgId = msgId;
         this.sender = sender;
         this.msg = msg;
-        this.aux = aux;
     }
 
     public Host getSender() {
         return sender;
-    }
-
-    public Host getAux() {
-        return aux;
     }
 
     public UUID getMsgId() {
