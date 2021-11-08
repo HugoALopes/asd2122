@@ -9,6 +9,7 @@ public class KelipsInformRequest extends ProtoMessage{
 	
 	private UUID uid;
 	
+	
 	public KelipsInformRequest() {
 		super(REQUEST_ID);
 		this.uid = UUID.randomUUID();
