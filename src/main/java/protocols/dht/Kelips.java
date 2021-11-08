@@ -3,9 +3,6 @@ package protocols.dht;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled.*;
-import io.netty.channel.unix.Buffer;
 import membership.common.ChannelCreated;
 import membership.common.NeighbourDown;
 import protocols.Broadcast.FloodBroadcast;
@@ -43,7 +40,7 @@ public class Kelips extends GenericProtocol {
 
     //enum para os tempos de razao para a conexao estar pendente
     public enum Reason {
-        NEW_JOIN, JOIN, INFORM, INFORM_DONE, OPEN_CONNECTION, RETRYCON
+        NEW_JOIN, JOIN, INFORM, INFORM_DONE
     }
 
     // Protocol information, to register in babel
@@ -158,7 +155,6 @@ public class Kelips extends GenericProtocol {
     // If a connection is successfully established, this event is triggered.
     private void uponOutConnectionUp(OutConnectionUp event, int channelId) {
         Host peer = event.getNode();
-       
         triggerNotification(new NeighbourDown(peer));
         Set<Reason> reasons = pending.remove(peer);
         logger.debug("Out Connection to {} is up.", peer);
@@ -231,37 +227,27 @@ public class Kelips extends GenericProtocol {
         if(fromID == myAG){
             agView.add(from);
         } //Sao de grupos diferentes
-        else{
-            ArrayList<Host> aux = contacts.get(fromID);
-            if(aux == null){
-                aux = new ArrayList<Host>();
-                aux.add(from);
-            }
-            else if(aux.size() < this.agNum){
-                aux.add(from);
-            }
-            contacts.put(fromID, aux);
-        }   
+
         connect(from, Reason.INFORM_DONE);
     }
 
     private void uponJoinReplyMessage(KelipsJoinReply msg, Host from, short sourceProto, int channelId) {
-        BigInteger hash = HashGenerator.generateHash(from.toString());
-        int fromID = (hash.intValue() % this.agNum);
-        this.contacts = msg.getContacts();
-
 
         Host c = null;
-        if(!contacts.containsKey(this.myAG)){
+        if(!msg.getContacts().containsKey(this.myAG)){
             this.agView = msg.getAgView();
             this.filetuples = msg.getFileTuples();
+            this.contacts = msg.getContacts();
         }else{
-            ArrayList<Host> aux = contacts.get(this.myAG);
+            ArrayList<Host> aux = msg.getContacts().get(this.myAG);
             int index = (int)(Math.random() * aux.size());
             c = aux.get(index);
         }
 
-        connect(c, Reason.OPEN_CONNECTION);
+        if(c == null){
+            for(Host h: this.agView)
+                connect(h, Reason.INFORM);
+        }
         
         if(c != null)
             connect(c, Reason.JOIN);
