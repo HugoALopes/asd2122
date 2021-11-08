@@ -12,7 +12,7 @@ import java.util.UUID;
 
 public class SaveMessage extends ProtoMessage {
 
-    public static final short MSG_ID = 206;
+    public static final short MSG_ID = 230;
 
     private final UUID mid;
     private BigInteger id;

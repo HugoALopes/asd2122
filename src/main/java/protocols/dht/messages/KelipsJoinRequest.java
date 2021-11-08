@@ -6,7 +6,7 @@ import pt.unl.fct.di.novasys.network.data.Host;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 
 public class KelipsJoinRequest extends ProtoMessage{
-    public final static short REQUEST_ID = 1050;
+    public final static short REQUEST_ID = 130;
 	
 	private UUID uid;
     private Host sender;

@@ -3,7 +3,7 @@ package protocols.timers;
 import pt.unl.fct.di.novasys.babel.generic.ProtoTimer;
 
 public class BroadcastTimer extends ProtoTimer {
-    public static final short TIMER_ID = 301;
+    public static final short TIMER_ID = 1000;
 
     public BroadcastTimer() {
         super(TIMER_ID);

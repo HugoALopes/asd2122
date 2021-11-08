@@ -4,7 +4,7 @@ import pt.unl.fct.di.novasys.babel.generic.ProtoTimer;
 
 public class CacheDeleteTimer extends ProtoTimer {
 
-    public static final short TIMER_ID = 207;
+    public static final short TIMER_ID = 1001;
 
     public CacheDeleteTimer() {
         super(TIMER_ID);

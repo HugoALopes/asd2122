@@ -9,7 +9,7 @@ import pt.unl.fct.di.novasys.network.ISerializer;
 import pt.unl.fct.di.novasys.network.data.Host;
 
 public class FloodMessage extends ProtoMessage {
-    public static final short MSG_ID = 201;
+    public static final short MSG_ID = 330;
 
     private final UUID mid;
     private final Host sender;

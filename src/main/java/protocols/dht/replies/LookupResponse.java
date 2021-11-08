@@ -8,7 +8,7 @@ import java.math.BigInteger;
 
 public class LookupResponse extends ProtoReply {
 
-    final public static short REPLY_ID = 102;
+    final public static short REPLY_ID = 120;
 
     private BigInteger id;
     private Host host;

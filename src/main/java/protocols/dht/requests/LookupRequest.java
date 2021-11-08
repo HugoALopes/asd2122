@@ -7,7 +7,7 @@ import pt.unl.fct.di.novasys.babel.generic.ProtoRequest;
 
 public class LookupRequest extends ProtoRequest {
 
-	public final static short REQUEST_ID = 101;
+	public final static short REQUEST_ID = 110;
 	
 	private BigInteger id;
 	private UUID uid;

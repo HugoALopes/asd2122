@@ -5,7 +5,7 @@ import java.util.UUID;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 
 public class KelipsInformRequest extends ProtoMessage{
-    public final static short REQUEST_ID = 1060;
+    public final static short REQUEST_ID = 132;
 	
 	private UUID uid;
 	

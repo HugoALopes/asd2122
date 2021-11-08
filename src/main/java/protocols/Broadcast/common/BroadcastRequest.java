@@ -7,7 +7,7 @@ import pt.unl.fct.di.novasys.network.data.Host;
 
 public class BroadcastRequest extends ProtoRequest {
 
-    public static final short REQUEST_ID = 202;
+    public static final short REQUEST_ID = 310;
 
     private final Host sender;
     private final UUID msgId;

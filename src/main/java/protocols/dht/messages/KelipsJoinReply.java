@@ -8,7 +8,7 @@ import pt.unl.fct.di.novasys.network.data.Host;
 import java.util.*;
 
 public class KelipsJoinReply extends ProtoMessage{
-    public final static short REQUEST_ID = 1051;
+    public final static short REQUEST_ID = 131;
 
     private UUID uid;
     private Map<Integer, ArrayList<Host>> contacts;
