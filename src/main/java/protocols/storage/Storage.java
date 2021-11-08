@@ -3,8 +3,9 @@ package protocols.storage;
 import channel.notifications.ChannelCreated;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import protocols.dht.replies.LookupResponse;
-import protocols.dht.requests.LookupRequest;
+
+import protocols.dht.kademlia.replies.LookupResponse;
+import protocols.dht.kademlia.requests.LookupRequest;
 import protocols.storage.messages.SaveMessage;
 import protocols.storage.requests.RetrieveRequest;
 import protocols.storage.requests.StoreRequest;
