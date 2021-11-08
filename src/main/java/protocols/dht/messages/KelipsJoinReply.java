@@ -2,7 +2,6 @@ package protocols.dht.messages;
 
 import java.util.UUID;
 
-import protocols.dht.NodeInfo;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 import pt.unl.fct.di.novasys.network.data.Host;
 
@@ -12,13 +11,13 @@ public class KelipsJoinReply extends ProtoMessage{
     public final static short REQUEST_ID = 1051;
 
     private UUID uid;
-    private Map<Integer, ArrayList<NodeInfo>> contacts;
+    private Map<Integer, ArrayList<Host>> contacts;
     private Host sender;
-    private Set<NodeInfo> agView;
-    private Map<Integer, NodeInfo> fileTuples;
+    private Set<Host> agView;
+    private Map<Integer, Host> fileTuples;
 
-    public KelipsJoinReply(Map<Integer, ArrayList<NodeInfo>> contacts, Host sender, Map<Integer, NodeInfo> fileTuples, 
-        Set<NodeInfo> agView) {
+    public KelipsJoinReply(Map<Integer, ArrayList<Host>> contacts, Host sender, Map<Integer, Host> fileTuples, 
+        Set<Host> agView) {
         super(REQUEST_ID);
         this.contacts = contacts;
         this.sender = sender;
@@ -31,15 +30,15 @@ public class KelipsJoinReply extends ProtoMessage{
         return this.sender;
     }
 
-    public Map<Integer, NodeInfo> getFileTuples(){
+    public Map<Integer, Host> getFileTuples(){
         return this.fileTuples;
     }
 
-    public Set<NodeInfo> getAgView(){
+    public Set<Host> getAgView(){
         return this.agView;
     }
 
-    public Map<Integer, ArrayList<NodeInfo>> getContacts(){
+    public Map<Integer, ArrayList<Host>> getContacts(){
         return this.contacts;
     }
     

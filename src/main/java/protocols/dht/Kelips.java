@@ -3,6 +3,9 @@ package protocols.dht;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled.*;
+import io.netty.channel.unix.Buffer;
 import membership.common.ChannelCreated;
 import membership.common.NeighbourDown;
 import protocols.Broadcast.FloodBroadcast;
@@ -58,12 +61,12 @@ public class Kelips extends GenericProtocol {
     private Random rnd;
 
     //Conexoes pendentes ainda nao estabelecidas
-    private final Map<NodeInfo, Set<Reason>> pending;
+    private final Map<Host, Set<Reason>> pending;
 
     //Soft state do no
-    private Set<NodeInfo> agView;
-    private Map<Integer, ArrayList<NodeInfo>> contacts;
-    private Map<Integer, NodeInfo> filetuples;
+    private Set<Host> agView;
+    private Map<Integer, ArrayList<Host>> contacts;
+    private Map<Integer, Host> filetuples;
     
  
 
@@ -133,8 +136,7 @@ public class Kelips extends GenericProtocol {
                 String contact = properties.getProperty("contact");
                 String[] hostElems = contact.split(":");
                 Host contactHost = new Host(InetAddress.getByName(hostElems[0]), Short.parseShort(hostElems[1]));
-                NodeInfo node = new NodeInfo(contactHost);
-                connect(node, Reason.NEW_JOIN);
+                connect(contactHost, Reason.NEW_JOIN);
             } catch (Exception e) {
                 logger.error("Invalid contact on configuration: '" + properties.getProperty("contact"));
                 System.exit(-1);
@@ -146,18 +148,7 @@ public class Kelips extends GenericProtocol {
 
     /*--------------------- Notifications subscribed ----------------------------- */
     private void uponDeliver(DeliverNotification not, short sourceProto){
-        byte[] msg = not.getMsg();
-        String code = new String(msg, StandardCharsets.US_ASCII);
-
-        BigInteger hash = HashGenerator.generateHash(peer.toString());
-        int fromID = (hash.intValue() % this.agNum);
-
-
-        switch(code){
-            case "d":
-                removeContact(fromID, peer);
-
-        }
+     
 
 
     }
@@ -169,8 +160,7 @@ public class Kelips extends GenericProtocol {
         Host peer = event.getNode();
        
         triggerNotification(new NeighbourDown(peer));
-        NodeInfo node = new NodeInfo(peer);
-        Set<Reason> reasons = pending.remove(node);
+        Set<Reason> reasons = pending.remove(peer);
         logger.debug("Out Connection to {} is up.", peer);
         if (reasons != null) {
             for(Reason reason: reasons){
@@ -200,9 +190,6 @@ public class Kelips extends GenericProtocol {
         BigInteger hash = HashGenerator.generateHash(peer.toString());
         int fromID = (hash.intValue() % this.agNum);
         this.removeContact(fromID, peer);
-        triggerNotification(new NeighbourDown(peer));
-        this.uponBroadcastTimer()
-        //possivelmente enviar para todos que este no ja nao esta up
     }
 
     private void uponOutConnectionFailed(OutConnectionFailed<ProtoMessage> event, int channelId) {
@@ -241,69 +228,65 @@ public class Kelips extends GenericProtocol {
         BigInteger hash = HashGenerator.generateHash(from.toString());
         int fromID = (hash.intValue() % this.agNum);
         //Sao do mesmo afinnity group
-        NodeInfo node =  new NodeInfo(from);
         if(fromID == myAG){
-            agView.add(node);
+            agView.add(from);
         } //Sao de grupos diferentes
         else{
-            ArrayList<NodeInfo> aux = contacts.get(fromID);
+            ArrayList<Host> aux = contacts.get(fromID);
             if(aux == null){
-                aux = new ArrayList<NodeInfo>();
-                aux.add(node);
+                aux = new ArrayList<Host>();
+                aux.add(from);
             }
             else if(aux.size() < this.agNum){
-                aux.add(node);
+                aux.add(from);
             }
             contacts.put(fromID, aux);
         }   
-        connect(node, Reason.INFORM_DONE);
+        connect(from, Reason.INFORM_DONE);
     }
 
     private void uponJoinReplyMessage(KelipsJoinReply msg, Host from, short sourceProto, int channelId) {
         BigInteger hash = HashGenerator.generateHash(from.toString());
         int fromID = (hash.intValue() % this.agNum);
-
-        NodeInfo p = null;
-
         this.contacts = msg.getContacts();
 
+
+        Host c = null;
         if(!contacts.containsKey(this.myAG)){
             this.agView = msg.getAgView();
             this.filetuples = msg.getFileTuples();
         }else{
-            ArrayList<NodeInfo> aux = contacts.get(this.myAG);
+            ArrayList<Host> aux = contacts.get(this.myAG);
             int index = (int)(Math.random() * aux.size());
-            p = aux.get(index);
+            c = aux.get(index);
         }
 
-        connect(p, Reason.OPEN_CONNECTION);
+        connect(c, Reason.OPEN_CONNECTION);
         
-        if(p != null)
-            connect(p, Reason.JOIN);
+        if(c != null)
+            connect(c, Reason.JOIN);
     }
 
     private void uponJoinMessage(KelipsJoinRequest msg, Host from, short sourceProto, int channelId) {
         BigInteger hash = HashGenerator.generateHash(from.toString());
         int fromID = (hash.intValue() % this.agNum);
         
-        NodeInfo node = new NodeInfo(from);
-        
         //Sao do mesmo afinnity group
         if(fromID == myAG){
-            agView.add(node);
+            agView.add(from);
         } //Sao de grupos diferentes
         else{
-            ArrayList<NodeInfo> aux = contacts.get(fromID);
+            ArrayList<Host> aux = contacts.get(from);
             if(aux == null){
-                aux = new ArrayList<NodeInfo>();
-                aux.add(node);
+                aux = new ArrayList<Host>();
+                aux.add(from);
             }
             else if(aux.size() < this.agNum){
-                aux.add(node);
+                aux.add(from);
             }
             contacts.put(fromID, aux);
         }   
-        connect(node, Reason.JOIN);
+        connect(from, Reason.JOIN);
     }
 
     private void uponMsgFail(ProtoMessage msg, Host host, short destProto,
@@ -386,7 +369,7 @@ public class Kelips extends GenericProtocol {
     }
 
     /* --------------------------------- Utils ---------------------------- */
-    private void connect(NodeInfo peer, Reason reason) {
+    private void connect(Host peer, Reason reason) {
         if(pending.containsKey(peer)){
             Set<Reason> set = pending.get(peer);
             set.add(reason);
@@ -396,25 +379,25 @@ public class Kelips extends GenericProtocol {
             set.add(reason);
             pending.put(peer, set);
         }
-        openConnection(peer.getHost());
+        openConnection(peer);
     }
 
     private void removeContact(int fromID, Host peer){
         if(fromID == myAG){
-            for(NodeInfo n: agView){
-                if(n.getHost().equals(peer))
+            for(Host n: agView){
+                if(n.equals(peer))
                     agView.remove(n);
             }
         }else{
-            ArrayList<NodeInfo> aux = contacts.get(fromID);
-            for(NodeInfo n: aux){
-                if(n.getHost().equals(peer))
+            ArrayList<Host> aux = contacts.get(fromID);
+            for(Host n: aux){
+                if(n.equals(peer))
                     aux.remove(n); 
             }
         }  
     }
 
-    private void uponBroadcastTimer(String msg) {
+    private void broadcastRequest(String msg) {
         //Upon triggering the broadcast timer, create a new message
         
         //ASCII encodes each character as 1 byte
