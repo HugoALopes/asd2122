@@ -128,6 +128,7 @@ public class Storage extends GenericProtocol {
 
     /*--------------------------------- Requests ---------------------------------------- */
     private void uponStoreRequest(StoreRequest request, short sourceProto) {
+        if (!channelReady) return;
 
         BigInteger id = generateHash(request.getName());
         byte[] content = request.getContent();
@@ -141,6 +142,8 @@ public class Storage extends GenericProtocol {
     }
 
     private void uponRetrieveRequest(RetrieveRequest request, short sourceProto) {
+        if (!channelReady) return;
+
         BigInteger id = generateHash(request.getName());
 
         byte[] content = (cache.get(id) == null)?store.get(id):cache.get(id).getContent();

@@ -8,16 +8,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a0bbf4ba-7463-49e9-98fd-bb596853f106" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/protocols/storage/Operation.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/protocols/storage/messages/SuccessSaveMessage.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/protocols/Broadcast/ProbReliableBroadcast.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/protocols/Broadcast/FloodBroadcast.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/Broadcast/FloodBroadcast.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/protocols/Broadcast/common/BroadcastRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/Broadcast/common/BroadcastRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/protocols/Broadcast/common/DeliverNotification.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/Broadcast/common/DeliverNotification.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/protocols/Broadcast/messages/FloodMessage.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/Broadcast/messages/FloodMessage.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/protocols/storage/CacheContent.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/storage/CacheContent.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/protocols/storage/Storage.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/storage/Storage.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/protocols/storage/messages/SaveMessage.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/storage/messages/SaveMessage.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -84,7 +77,7 @@
       <workItem from="1635937999052" duration="21521000" />
       <workItem from="1635990371061" duration="1895000" />
       <workItem from="1636041070994" duration="8731000" />
-      <workItem from="1636380075425" duration="20425000" />
+      <workItem from="1636380075425" duration="23637000" />
     </task>
     <servers />
   </component>
