@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -145,31 +146,34 @@ public class Storage extends GenericProtocol {
         if (!channelReady) return;
 
         BigInteger id = generateHash(request.getName());
-
         byte[] content = (cache.get(id) == null)?store.get(id):cache.get(id).getContent();
 
         if (content == null) {
             context.put(nextContext(),new Operation(false, id, request.getName()));
-
             LookupRequest getHost = new LookupRequest(id);
             sendRequest(getHost, DHT_PROTOCOL);
-        } else
-            sendReply(new StoreOKReply(request.getName(),null),APP_PROTOCOL);
+        } else {
+            //TODO - delete context
+            sendReply(new StoreOKReply(request.getName(), null), APP_PROTOCOL);
+        }
     }
 
     /*--------------------------------- Replies ---------------------------------------- */
-    //TODO - change for host[]
+    //TODO - change for host[] -> change get(0) - context inside msg's
     private void uponLookupResponse(LookupResponse response, short sourceProto) {
-        Host host = response.getHost();
+        List<Host> hostList = response.getHost();
+        context.get(0).setHostList(hostList);
+
         byte[] content= cache.get(response.getObjId()).getContent();
-        if (host.equals(me)) {
-            store.put(response.getObjId(), content);
-        } else {
-            //send msg to host to store
-            SaveMessage requestMsg = new SaveMessage(null,response.getObjId(),
-                    response.getHost(), content);
-            sendMessage(requestMsg, host);
-        }
+
+        hostList.forEach(host -> {
+            if (host.equals(me))
+                store.put(response.getObjId(), content);
+        });
+
+        Host host = context.get(0).getHost();
+        SaveMessage requestMsg = new SaveMessage(null,response.getObjId(), host, content);
+        sendMessage(requestMsg, host);
     }
 
     /*--------------------------------- Messages ---------------------------------------- */
@@ -179,6 +183,7 @@ public class Storage extends GenericProtocol {
     }
 
     private void uponSuccessSaveMessage(SuccessSaveMessage msg, Host host, short proto, int channelId) {
+        //TODO - delete context
         sendReply(new StoreOKReply(msg.getName(), msg.getUid()),APP_PROTOCOL);
     }
     
@@ -188,9 +193,15 @@ public class Storage extends GenericProtocol {
         logger.error("Message {} to {} failed, reason: {}", msg, host, throwable);
     }
 
+    //TODO - check host
     private void uponFailSave(SuccessSaveMessage msg, Host host, short proto, Throwable throwable, int channelId) {
         logger.error("Retrieve of {} failed, reason: {}", msg.getId(), throwable);
-        sendReply(new RetrieveFailedReply(msg.getName(),msg.getUid()),APP_PROTOCOL);
+        if(context.get(0).nextHost()){
+            SaveMessage requestMsg = new SaveMessage(null,context.get(0).getId(), host,
+                    cache.get(context.get(0).getId()).getContent());
+            sendMessage(requestMsg, host);
+        } else
+            sendReply(new RetrieveFailedReply(msg.getName(),msg.getUid()),APP_PROTOCOL);
     }
 
     /*--------------------------------- Timers ---------------------------------------- */

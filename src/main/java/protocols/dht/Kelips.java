@@ -305,9 +305,12 @@ public class Kelips extends GenericProtocol {
         sendMessage(msgR, host);
     }
 
+    //não entendo
     private void uponLookupReplyMessage(GetFileReply msg, Host from, short sourceProto, int channelId){
         if(ongoinglookUp.containsKey(msg.getUid())){
-            LookupResponse resp = new LookupResponse(msg.getObjID(), from);
+            List<Host> hlist = new ArrayList<>();
+            hlist.add(from);
+            LookupResponse resp = new LookupResponse(msg.getObjID(), hlist);
             sendReply(resp, Storage.PROTOCOL_ID);
             ongoinglookUp.remove(msg.getUid());
         }
@@ -325,12 +328,12 @@ public class Kelips extends GenericProtocol {
     /*--------------------------------- Requests ---------------------------------------- */
     private void uponLookupRequest(LookupRequest lookupRequest, short sourceProto) {
         // TODO - check bigInteger to int
-        int fAG = lookupRequest.getObjID().intValue() % agNum;
+        int fAG = lookupRequest.getObjID().mod(BigInteger.valueOf(agNum)).intValueExact();
         Host host;
         if (fAG == myAG) {
             host = filetuples.get(lookupRequest.getObjID().intValue());
 
-            if (host == null) {
+            if (host == null) {//file do not belong my AG
                 for(Host h: agView){
                     GetFileRequest msg = new GetFileRequest(lookupRequest.getObjID());
                     sendMessage(msg, h); 
@@ -342,10 +345,11 @@ public class Kelips extends GenericProtocol {
                     ongoinglookUp.put(msg.getUid(), aux);
                 }
             }else{
-                LookupResponse reply = new LookupResponse(lookupRequest.getObjID(), host);
+                List<Host> hostList = new ArrayList<>();
+                hostList.add(host);
+                LookupResponse reply = new LookupResponse(lookupRequest.getObjID(), hostList);
                 sendReply(reply, Storage.PROTOCOL_ID);
-            } 
-           
+            }
         } else { // file does not belong my AG
             Set<Host> contact = contacts.get(fAG);
             if(contact != null){
