@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 public class CacheContent {
     private byte[] content;
+    private String name;
     private LocalDateTime time;
 
     public CacheContent(LocalDateTime time, byte[] content) {

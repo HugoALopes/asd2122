@@ -1,36 +1,30 @@
 package protocols.storage;
 
 import channel.notifications.ChannelCreated;
-import membership.common.NeighbourDown;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import protocols.dht.Kelips;
-import protocols.dht.messages.KelipsInformRequest;
-import protocols.dht.messages.KelipsJoinReply;
-import protocols.dht.messages.KelipsJoinRequest;
 import protocols.dht.replies.LookupResponse;
 import protocols.dht.requests.LookupRequest;
 import protocols.storage.messages.SaveMessage;
+import protocols.storage.messages.SuccessSaveMessage;
+import protocols.storage.replies.RetrieveFailedReply;
+import protocols.storage.replies.StoreOKReply;
 import protocols.storage.requests.RetrieveRequest;
 import protocols.storage.requests.StoreRequest;
-import protocols.timers.*;
+import protocols.timers.CacheDeleteTimer;
 import pt.unl.fct.di.novasys.babel.core.GenericProtocol;
 import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 import pt.unl.fct.di.novasys.channel.tcp.TCPChannel;
 import pt.unl.fct.di.novasys.channel.tcp.events.*;
 import pt.unl.fct.di.novasys.network.data.Host;
-import utils.HashGenerator;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.sql.Timestamp;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 
 import static utils.HashGenerator.generateHash;
 
@@ -41,8 +35,8 @@ public class Storage extends GenericProtocol {
     //Protocol information, to register in babel
     public static final String PROTOCOL_NAME = "Store";
     public static final short PROTOCOL_ID = 200;
-
     public static final short DHT_PROTOCOL = 100;
+    public static final short APP_PROTOCOL = 300;
 
     private static final int CACHE_TIMEOUT = 50000;
     private final Host me;
@@ -50,6 +44,8 @@ public class Storage extends GenericProtocol {
 
     private final Map<BigInteger, CacheContent> cache;
     private final Map<BigInteger, byte[]> store;
+    private final Map<Integer, Operation> context;
+    private int contextId;
 
     private boolean channelReady;
 
@@ -58,6 +54,8 @@ public class Storage extends GenericProtocol {
         me = myself;
         cache = new HashMap<>();
         store = new HashMap<>();
+        context = new HashMap<>();
+        contextId=0;
 
         channelId = 0;
 
@@ -103,7 +101,6 @@ public class Storage extends GenericProtocol {
         setupPeriodicTimer(new CacheDeleteTimer(), CACHE_TIMEOUT, CACHE_TIMEOUT);
     }
 
-    //TODO - check!! -> copied from example
     //Upon receiving the channelId from the membership, register our own callbacks and serializers
     private void uponChannelCreated(ChannelCreated notification, short sourceProto) {
         int cId = notification.getChannelId();
@@ -114,6 +111,7 @@ public class Storage extends GenericProtocol {
         /*---------------------- Register Message Handlers -------------------------- */
         try {
             registerMessageHandler(cId, SaveMessage.MSG_ID, this::uponSaveMessage, this::uponMsgFail);
+            registerMessageHandler(cId, SuccessSaveMessage.MSG_ID, this::uponSuccessSaveMessage, this::uponFailSave);
         } catch (HandlerRegistrationException e) {
             logger.error("Error registering message handler: " + e.getMessage());
             e.printStackTrace();
@@ -123,12 +121,19 @@ public class Storage extends GenericProtocol {
         channelReady = true;
     }
 
+    /*--------------------------------- AUX ---------------------------------------- */
+    private int nextContext(){
+        return (contextId==Integer.MAX_VALUE)?0:contextId++;
+    }
+
     /*--------------------------------- Requests ---------------------------------------- */
     private void uponStoreRequest(StoreRequest request, short sourceProto) {
 
         BigInteger id = generateHash(request.getName());
         byte[] content = request.getContent();
         cache.put(id, new CacheContent(LocalDateTime.now(),content));
+
+        context.put(nextContext(),new Operation(true, id, request.getName()));
 
         //find "saver" host
         LookupRequest getHost = new LookupRequest(id);
@@ -138,17 +143,19 @@ public class Storage extends GenericProtocol {
     private void uponRetrieveRequest(RetrieveRequest request, short sourceProto) {
         BigInteger id = generateHash(request.getName());
 
-        byte[] content = ((cache.get(id) == null)?store.get(id):cache.get(id).getContent());
+        byte[] content = (cache.get(id) == null)?store.get(id):cache.get(id).getContent();
 
         if (content == null) {
-            //TODO - not sure
+            context.put(nextContext(),new Operation(false, id, request.getName()));
+
             LookupRequest getHost = new LookupRequest(id);
             sendRequest(getHost, DHT_PROTOCOL);
-        }
+        } else
+            sendReply(new StoreOKReply(request.getName(),null),APP_PROTOCOL);
     }
 
     /*--------------------------------- Replies ---------------------------------------- */
-    //TODO - check if right
+    //TODO - change for host[]
     private void uponLookupResponse(LookupResponse response, short sourceProto) {
         Host host = response.getHost();
         byte[] content= cache.get(response.getObjId()).getContent();
@@ -163,14 +170,24 @@ public class Storage extends GenericProtocol {
     }
 
     /*--------------------------------- Messages ---------------------------------------- */
-    private void uponSaveMessage(SaveMessage msg, Host host, short i, int i1) {
+    private void uponSaveMessage(SaveMessage msg, Host host, short proto, int channelId) {
         store.put(msg.getObjId(), msg.getContent());
+        sendMessage(new SuccessSaveMessage(msg.getMid(),null),host);
+    }
+
+    private void uponSuccessSaveMessage(SuccessSaveMessage msg, Host host, short proto, int channelId) {
+        sendReply(new StoreOKReply(msg.getName(), msg.getUid()),APP_PROTOCOL);
     }
     
     private void uponMsgFail(ProtoMessage msg, Host host, short destProto,
                              Throwable throwable, int channelId) {
         //If a message fails to be sent, for whatever reason, log the message and the reason
         logger.error("Message {} to {} failed, reason: {}", msg, host, throwable);
+    }
+
+    private void uponFailSave(SuccessSaveMessage msg, Host host, short proto, Throwable throwable, int channelId) {
+        logger.error("Retrieve of {} failed, reason: {}", msg.getId(), throwable);
+        sendReply(new RetrieveFailedReply(msg.getName(),msg.getUid()),APP_PROTOCOL);
     }
 
     /*--------------------------------- Timers ---------------------------------------- */

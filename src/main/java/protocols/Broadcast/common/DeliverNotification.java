@@ -6,7 +6,7 @@ import pt.unl.fct.di.novasys.babel.generic.ProtoNotification;
 import pt.unl.fct.di.novasys.network.data.Host;
 
 public class DeliverNotification extends ProtoNotification {
-    public static final short NOTIFICATION_ID = 340;
+    public static final short NOTIFICATION_ID = 440;
 
     private final Host sender;
     private final UUID msgId;

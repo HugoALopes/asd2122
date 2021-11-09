@@ -38,6 +38,10 @@ public class SaveMessage extends ProtoMessage {
         return id;
     }
 
+    public UUID getMid() {
+        return mid;
+    }
+
     public Host getHost() {
         return host;
     }

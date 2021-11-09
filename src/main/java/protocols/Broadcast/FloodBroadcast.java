@@ -1,29 +1,30 @@
 package protocols.Broadcast;
 
+import membership.common.ChannelCreated;
+import membership.common.NeighbourDown;
+import membership.common.NeighbourUp;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import protocols.Broadcast.common.BroadcastRequest;
+import protocols.Broadcast.common.DeliverNotification;
+import protocols.Broadcast.messages.FloodMessage;
+import pt.unl.fct.di.novasys.babel.core.GenericProtocol;
+import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
+import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
+import pt.unl.fct.di.novasys.network.data.Host;
+
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import protocols.Broadcast.common.BroadcastRequest;
-import protocols.Broadcast.common.DeliverNotification;
-import protocols.Broadcast.messages.FloodMessage;
-import membership.common.*;
-import pt.unl.fct.di.novasys.babel.core.GenericProtocol;
-import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
-import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
-import pt.unl.fct.di.novasys.network.data.Host;
-
 public class FloodBroadcast extends GenericProtocol {
     private static final Logger logger = LogManager.getLogger(FloodBroadcast.class);
 
     //Protocol information, to register in babel
     public static final String PROTOCOL_NAME = "Flood";
-    public static final short PROTOCOL_ID = 300;
+    public static final short PROTOCOL_ID = 400;
 
     private final Host myself; //My own address/port
     private final Set<Host> neighbours; //My known neighbours (a.k.a peers the membership protocol told me about)
