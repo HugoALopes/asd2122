@@ -16,12 +16,12 @@ public class KelipsJoinReply extends ProtoMessage{
     public final static short REQUEST_ID = 131;
 
     private UUID uid;
-    private Map<Integer, ArrayList<Host>> contacts;
+    private Map<Integer, Set<Host>> contacts;
     private Host sender;
     private Set<Host> agView;
     private Map<Integer, Host> fileTuples;
 
-    public KelipsJoinReply(Map<Integer, ArrayList<Host>> contacts, Host sender, Map<Integer, Host> fileTuples, 
+    public KelipsJoinReply(Map<Integer, Set<Host>> contacts, Host sender, Map<Integer, Host> fileTuples, 
         Set<Host> agView) {
         super(REQUEST_ID);
         this.contacts = contacts;
@@ -43,7 +43,7 @@ public class KelipsJoinReply extends ProtoMessage{
         return this.agView;
     }
 
-    public Map<Integer, ArrayList<Host>> getContacts(){
+    public Map<Integer, Set<Host>> getContacts(){
         return this.contacts;
     }
     

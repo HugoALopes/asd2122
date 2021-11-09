@@ -5,6 +5,7 @@ import pt.unl.fct.di.novasys.babel.generic.ProtoReply;
 import pt.unl.fct.di.novasys.network.data.Host;
 
 import java.math.BigInteger;
+import java.util.UUID;
 
 public class LookupResponse extends ProtoReply {
 
@@ -26,5 +27,6 @@ public class LookupResponse extends ProtoReply {
     public Host getHost() {
         return host;
     }
+
 
 }
