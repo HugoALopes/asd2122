@@ -188,7 +188,7 @@ public class Kelips extends GenericProtocol {
                         sendMessage(new KelipsJoinRequest(this.me), peer);
                         break;
                     case JOIN: //QUANDO UM NO RECEBE UM JOIN REQUEST ENVIA A SUA VIEW E A SI MESMO
-                        KelipsJoinReply reply = new KelipsJoinReply(contacts, this.me, this.filetuples, this.agView);
+                        KelipsJoinReply reply = new KelipsJoinReply(this.me, contacts, this.filetuples, this.agView);
                         sendMessage(reply, peer);
                         break;
                     case INFORM: //DAR O NOVO NO A CONHECER AOS RESTANTES
@@ -443,7 +443,6 @@ public class Kelips extends GenericProtocol {
                         agView.add(h);
                 }
             }
-
         }else{
             Set<Host> aux = contacts.get(fromID);
             for(Host n: aux){
@@ -458,7 +457,6 @@ public class Kelips extends GenericProtocol {
                 }
             }
             contacts.put(fromID, aux);
-
         }  
 
         Set<Host> aux = candidates.get(fromID);
@@ -467,11 +465,15 @@ public class Kelips extends GenericProtocol {
                 aux.remove(h);
         }
         candidates.put(fromID, aux);
-        pending.remove(peer); 
+        pending.remove(peer);
+        filetuples.forEach((i,h) -> {
+            if(h.equals(peer))filetuples.remove(i);
+        });
+        /*
         for(Host h: filetuples.values()){
             //Remover o host dos filetuples se houver
         }
-
+        */
         closeConnection(peer);
     }
 

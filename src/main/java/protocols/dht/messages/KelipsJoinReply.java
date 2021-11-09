@@ -1,14 +1,11 @@
 package protocols.dht.messages;
 
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.math.BigInteger;
-import java.util.UUID;
-
+import java.io.*;
 import io.netty.buffer.ByteBuf;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 import pt.unl.fct.di.novasys.network.ISerializer;
 import pt.unl.fct.di.novasys.network.data.Host;
+import utils.Serializer;
 
 import java.util.*;
 
@@ -21,7 +18,7 @@ public class KelipsJoinReply extends ProtoMessage{
     private Set<Host> agView;
     private Map<Integer, Host> fileTuples;
 
-    public KelipsJoinReply(Map<Integer, Set<Host>> contacts, Host sender, Map<Integer, Host> fileTuples, 
+    public KelipsJoinReply(Host sender, Map<Integer, Set<Host>> contacts, Map<Integer, Host> fileTuples,
         Set<Host> agView) {
         super(REQUEST_ID);
         this.contacts = contacts;
@@ -57,19 +54,10 @@ public class KelipsJoinReply extends ProtoMessage{
         public void serialize(KelipsJoinReply msg, ByteBuf out) throws IOException {
             out.writeLong(msg.uid.getMostSignificantBits());
             out.writeLong(msg.uid.getLeastSignificantBits());
-            ObjectOutputStream oos = new ObjectOutputStream();
-            oos.writeObject(msg.contacts);
             Host.serializer.serialize(msg.getSender(), out);
-            out.writeShort(msg.getId());
-            byte[] objId = msg.getObjId().toByteArray();
-            out.writeInt(objId.length);
-            if (objId.length > 0) {
-                out.writeBytes(objId);
-            }
-            out.writeInt(msg.content.length);
-            if (msg.content.length > 0) {
-                out.writeBytes(msg.content);
-            }
+            InformationGossip auxMsg = new InformationGossip(msg.contacts, msg.fileTuples, msg.agView);
+            Serializer.serialize(auxMsg);
+
         }
 
         @Override
@@ -77,21 +65,10 @@ public class KelipsJoinReply extends ProtoMessage{
             long firstLong = in.readLong();
             long secondLong = in.readLong();
             UUID mid = new UUID(firstLong, secondLong);
-
             Host sender = Host.serializer.deserialize(in);
-            //short toDeliver = in.readShort();
-            int size = in.readInt();
-            byte[] objIdArr = new byte[size];
-            if (size > 0)
-                in.readBytes(objIdArr);
-            BigInteger objId = new BigInteger(objIdArr);
-            size = in.readInt();
-            byte[] content = new byte[size];
-            if (size > 0)
-                in.readBytes(content);
+            InformationGossip auxMsg = Serializer.deserialize(in.readBytes(in.readableBytes()).array());
 
-            //TODO - Check
-            return new KelipsJoinReply(mid, objId, sender, content);
+            return new KelipsJoinReply(sender, auxMsg.getContacts(), auxMsg.getFileTuples(), auxMsg.getAgView());
         }
     };
 }
