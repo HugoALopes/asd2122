@@ -104,6 +104,7 @@ public class AutomatedApplication extends GenericProtocol {
 
 	private void uponChannelCreated(ChannelCreated notification, short sourceProto) {
 		try {
+			registerSharedChannel(notification.getChannelId());
 			registerChannelEventHandler(notification.getChannelId(), ChannelMetrics.EVENT_ID, this::uponChannelMetrics);
 		} catch (HandlerRegistrationException e) {
 			e.printStackTrace();
