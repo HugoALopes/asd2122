@@ -16,7 +16,6 @@ public class GetFileReply extends ProtoMessage{
         super(REQUEST_ID);
         this.objID = objID;
         this.uid = uid;
-        //TODO Auto-generated constructor stub
     }
 
     public BigInteger getObjID(){

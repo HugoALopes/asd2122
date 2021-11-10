@@ -5,15 +5,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import protocols.dht.replies.LookupResponse;
 import protocols.dht.requests.LookupRequest;
-import protocols.storage.messages.GetMessage;
-import protocols.storage.messages.SaveMessage;
-import protocols.storage.messages.SuccessSaveMessage;
-import protocols.storage.messages.ThereYouGoMessage;
-import protocols.storage.replies.RetrieveFailedReply;
-import protocols.storage.replies.RetrieveOKReply;
-import protocols.storage.replies.StoreOKReply;
-import protocols.storage.requests.RetrieveRequest;
-import protocols.storage.requests.StoreRequest;
+import protocols.storage.messages.*;
+import protocols.storage.replies.*;
+import protocols.storage.requests.*;
 import protocols.timers.CacheDeleteTimer;
 import pt.unl.fct.di.novasys.babel.core.GenericProtocol;
 import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
@@ -86,7 +80,7 @@ public class Storage extends GenericProtocol {
         registerRequestHandler(RetrieveRequest.REQUEST_ID, this::uponRetrieveRequest);
 
         /*--------------------- Register Reply Handlers ----------------------------- */
-        registerReplyHandler(LookupRequest.REQUEST_ID, this::uponLookupResponse);
+        registerReplyHandler(LookupResponse.REPLY_ID, this::uponLookupResponse);
 
         /*--------------------- Register Notification Handlers ----------------------------- */
         //subscribeNotification(NeighbourUp.NOTIFICATION_ID, this::uponNeighbourUp);
@@ -111,12 +105,15 @@ public class Storage extends GenericProtocol {
         registerSharedChannel(cId);
         /*---------------------- Register Message Serializers ---------------------- */
         registerMessageSerializer(cId, SaveMessage.MSG_ID, SaveMessage.serializer);
+        registerMessageSerializer(cId, SuccessSaveMessage.MSG_ID, SuccessSaveMessage.serializer);
         registerMessageSerializer(cId, GetMessage.MSG_ID, GetMessage.serializer);
+        registerMessageSerializer(cId, ThereYouGoMessage.MSG_ID, ThereYouGoMessage.serializer);
         /*---------------------- Register Message Handlers -------------------------- */
         try {
             registerMessageHandler(cId, SaveMessage.MSG_ID, this::uponSaveMessage, this::uponSaveMsgFail);
             registerMessageHandler(cId, SuccessSaveMessage.MSG_ID, this::uponSuccessSaveMessage, this::uponFailSave);
             registerMessageHandler(cId, GetMessage.MSG_ID, this::uponGetMessage, this::uponFailGet);
+            registerMessageHandler(cId, ThereYouGoMessage.MSG_ID, this::uponThereYouGoMessage, this::uponFailRetrieve);
         } catch (HandlerRegistrationException e) {
             logger.error("Error registering message handler: " + e.getMessage());
             e.printStackTrace();
@@ -125,7 +122,6 @@ public class Storage extends GenericProtocol {
         //Now we can start sending messages
         channelReady = true;
     }
-
 
     /*--------------------------------- AUX ---------------------------------------- */
     //private int nextContext(){ return (contextId==Integer.MAX_VALUE)?0:contextId++; }
@@ -211,6 +207,10 @@ public class Storage extends GenericProtocol {
                 host);
     }
 
+    private void uponThereYouGoMessage(ThereYouGoMessage msg, Host host, short proto, int channelId) {
+        sendReply(new RetrieveOKReply(null,msg.getMid(),msg.getContent()), APP_PROTOCOL);
+    }
+
     private void uponFailGet(GetMessage msg, Host host, short proto, Throwable throwable, int channelId) {
         //TODO - check host + check if clause
         if(context.get(msg.getMid()).nextHost() && cache.get(context.get(msg.getMid()).getId()) != null ){
@@ -221,6 +221,12 @@ public class Storage extends GenericProtocol {
             context.remove(msg.getMid());
             logger.error("Object {} retrieval failed", msg.getObjId());
         }
+    }
+
+    private void uponFailRetrieve(ThereYouGoMessage msg, Host host, short destProto,
+                                  Throwable throwable, int channelId) {
+        logger.error("Message {} to {} failed, reason: {}", msg, host, throwable);
+        sendReply(new RetrieveFailedReply(context.get(msg.getMid()).getName(),msg.getMid()),APP_PROTOCOL);
     }
     
     private void uponSaveMsgFail(ProtoMessage msg, Host host, short destProto,
