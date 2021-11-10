@@ -22,6 +22,9 @@ import java.util.Properties;
 import pt.unl.fct.di.novasys.babel.core.GenericProtocol;
 import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
+import pt.unl.fct.di.novasys.channel.tcp.events.InConnectionDown;
+import pt.unl.fct.di.novasys.channel.tcp.events.OutConnectionDown;
+import pt.unl.fct.di.novasys.channel.tcp.events.OutConnectionFailed;
 import pt.unl.fct.di.novasys.channel.tcp.events.OutConnectionUp;
 import pt.unl.fct.di.novasys.network.data.Host;
 
@@ -61,6 +64,9 @@ public class Kademlia extends GenericProtocol {
         //TODO: alterar o 0 para o valor do channelId
         //TODO: faltam todos os tcp events
         registerChannelEventHandler(0, OutConnectionUp.EVENT_ID, this::uponOutConnectionUp);
+        registerChannelEventHandler(0, OutConnectionDown.EVENT_ID, this::uponOutConnectionDown);
+        registerChannelEventHandler(0, OutConnectionFailed.EVENT_ID, this::uponOutConnectionFailed);
+        registerChannelEventHandler(0, InConnectionDown.EVENT_ID, this::uponInConnectionDown);
     }
 
     @Override
@@ -136,6 +142,29 @@ public class Kademlia extends GenericProtocol {
         node_lookup(my_node.getNodeId());
     }
 
+    private void uponOutConnectionDown(OutConnectionDown event, int channelId) {
+        Host peer = event.getNode();
+        logger.debug("Out Connection to {} is down cause {}", peer, event.getCause());
+
+        Node n = new Node(peer, HashGenerator.generateHash(peer.toString()));
+        this.remove_from_k_bucket(n);
+    }
+
+    private void uponOutConnectionFailed(OutConnectionFailed<ProtoMessage> event, int channelId) {
+        Host peer = event.getNode();
+        logger.debug("Connection to {} failed cause: {}", peer, event.getCause());
+    }
+
+
+    //A connection someone established to me is disconnected.
+    private void uponInConnectionDown(InConnectionDown event, int channelId) {
+        Host peer = event.getNode();
+        logger.debug("In Connection to {} is down cause {}", peer, event.getCause());
+
+        Node n = new Node(peer, HashGenerator.generateHash(peer.toString()));
+        this.remove_from_k_bucket(n);
+    }
+
     /* --------------------------------- Utils ---------------------------- */
     private void insert_on_k_bucket(Node node) {
         int distance = calculate_dist(node.getNodeId(), my_node.getNodeId());
@@ -150,6 +179,15 @@ public class Kademlia extends GenericProtocol {
             k_bucket.add(node); 
         } else
             k_bucket.add(node);
+    }
+
+    private void remove_from_k_bucket(Node node){
+        int distance = calculate_dist(node.getNodeId(), my_node.getNodeId());
+        int i = (int) (Math.log(distance) / Math.log(2));
+
+        List<Node> k_bucket = k_buckets_list.get(i);
+        if(k_bucket.contains(node))
+            k_bucket.remove(node);
 
     }
  
