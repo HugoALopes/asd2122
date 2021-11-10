@@ -24,6 +24,7 @@ import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 import pt.unl.fct.di.novasys.channel.tcp.events.OutConnectionUp;
 import pt.unl.fct.di.novasys.network.data.Host;
+
 import utils.HashGenerator;
 
 public class Kademlia extends GenericProtocol {
@@ -33,13 +34,10 @@ public class Kademlia extends GenericProtocol {
     public final static short PROTOCOL_ID = 200;
     public final static String PROTOCOL_NAME = "kademlia";
 
-    private Map<BigInteger, List<Node>> ongoing; //guarda para cada pedido de lookup uma lista com os nós dos quais estou à espera de resposta ao findNode
-    private Map<BigInteger, List<Node>> queried; //lista de nós que ja responderam
-    private Map<BigInteger, List<Node>> kclosestMap; //Guarda para cada pedido de lookup os k closest nós conhecidos até ao momento
+    private Map<BigInteger, QueryState> queriesByIdToFind;
 
     private Node my_node;
     private List<List<Node>> k_buckets_list;
-    //Estas duas variáveis vêm do ficheiro de config
     private int alfa;
     private int k;
 
@@ -49,17 +47,12 @@ public class Kademlia extends GenericProtocol {
         k_buckets_list = new ArrayList<List<Node>>();
         my_node = new Node(self, HashGenerator.generateHash(self.toString()));
 
-        ongoing = new HashMap<>();
-        queried = new HashMap<>();
-        kclosestMap = new HashMap<>();
+        queriesByIdToFind = new HashMap<>();
 
         /*----------------------------- Register Message Handlers ----------------------------- */
         //TODO: alterar o 0 para o valor do channelId
         registerMessageHandler(0, KademliaFindNodeRequest.REQUEST_ID, this::uponFindNode, this::uponMsgFail);
         registerMessageHandler(0, KademliaFindNodeReply.REQUEST_ID, this::uponFindNodeReply, this::uponMsgFail);
-
-        /*------------------------------ Register Reply Handlers ------------------------------ */
-        //registerReplyHandler(LookupResponse.REPLY_ID, this::uponLookupReplyMessage);
 
         /*----------------------------- Register Request Handlers ----------------------------- */
         registerRequestHandler(LookupRequest.REQUEST_ID, this::uponLookupRequest);
@@ -78,6 +71,8 @@ public class Kademlia extends GenericProtocol {
                 String[] hostElems = contact.split(":");
                 Host contactHost = new Host(InetAddress.getByName(hostElems[0]), Short.parseShort(hostElems[1]));
                 openConnection(contactHost);
+                alfa = Integer.parseInt(properties.getProperty("alfaValue"));
+                k = Integer.parseInt(properties.getProperty("kValue"));
             } catch (Exception e) {
                 logger.error("Invalid contact on configuration: '" + properties.getProperty("contact"));
                 System.exit(-1);
@@ -101,45 +96,29 @@ public class Kademlia extends GenericProtocol {
     private void uponFindNodeReply(KademliaFindNodeReply msg, Host host, short sourceProto, int channelId){
         BigInteger idToFind = msg.getIdToFind();
 
-        if(!queried.containsKey(idToFind));
-            queried.put(idToFind, new ArrayList<>());
-
-        queried.get(idToFind).add(msg.getSender());
-        ongoing.get(idToFind).remove(msg.getSender());
+        QueryState query = queriesByIdToFind.get(idToFind);
+        query.receivedFindNodeReply(msg.getSender());
     
         List<Node> kclosestReturned = msg.getClosestNodes();
-        List<Node> temp = new ArrayList<>(k);
         for(int i = 0; i < k; i++){
             insert_on_k_bucket(kclosestReturned.get(i));
-            Node n = kclosestMap.get(idToFind).get(i);
-            Node node = kclosestReturned.get(i);
-            if(this.calculate_dist(node.getNodeId(), idToFind) < this.calculate_dist(n.getNodeId(), idToFind)) //Tenho de inserir 
-                temp.add(i, node);
-            else
-                temp.add(i, n);
+            query.updateKclosest(kclosestReturned.get(i), idToFind);
         }
-        
-        if(kclosestMap.get(idToFind) == temp){ //encontrei os knodes mais proximos
-            LookupResponse reply = new LookupResponse(temp);
+
+        if(query.hasStabilised()){ //encontrei os knodes mais proximos
+            LookupResponse reply = new LookupResponse(query.getKclosest());
             sendReply(reply, Storage.PROTOCOL_ID); 
-            ongoing.remove(idToFind);
-            queried.remove(idToFind); 
-            kclosestMap.remove(idToFind);
+            queriesByIdToFind.remove(idToFind);
         } else {
-            kclosestMap.replace(idToFind, temp);
-            for(Node n: temp){
-                if(!queried.get(idToFind).contains(n) && !ongoing.get(idToFind).contains(n)){ //ainda não contactei com este no
-                    ongoing.get(idToFind).add(n);
+            List<Node> kclosest = query.getKclosest();
+            for(Node n: kclosest){
+                if(!query.alreadyQueried(n) && !query.stillOngoing(n)){ //ainda não contactei com este no
+                    query.sendFindNodeRequest(n);
                     sendMessage(new KademliaFindNodeRequest(idToFind, my_node), n.getHost());
                 }
-            }
+            } 
         }
     }
-
-    /* --------------------------------- Reply ---------------------------- 
-    private void uponLookupReplyMessage(LookupResponse msg, short sourceProto){
-
-    }*/
 
     /*--------------------------------- Requests ---------------------------------------- */
     private void uponLookupRequest(LookupRequest lookupRequest, short sourceProto) {
@@ -190,20 +169,20 @@ public class Kademlia extends GenericProtocol {
         return closest_nodes;
     }
 
-    private int calculate_dist(BigInteger node1, BigInteger node2){
-        return node2.xor(node1).intValue();
-    }
-
     private void node_lookup(BigInteger id) {
         List<Node> kclosest = find_node(id); //list containing the k closest nodes
 
-        //TODO: tenho de ordenar a lista
-        kclosestMap.put(id, kclosest);
+        QueryState query = new QueryState(kclosest);
 
-        ongoing.put(id, new ArrayList<>(alfa));
         for(int i = 0; i < alfa; i++){
-            ongoing.get(id).add(kclosest.get(i));
+            query.sendFindNodeRequest(kclosest.get(i));
             sendMessage(new KademliaFindNodeRequest(id, my_node), kclosest.get(i).getHost());
         }
+
+        queriesByIdToFind.put(id, query);
+    }
+
+    private int calculate_dist(BigInteger node1, BigInteger node2){
+        return node2.xor(node1).intValue();
     }
 }
