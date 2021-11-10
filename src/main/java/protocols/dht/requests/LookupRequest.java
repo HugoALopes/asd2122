@@ -11,13 +11,16 @@ public class LookupRequest extends ProtoRequest {
 	
 	private BigInteger id;
 	private UUID uid;
-	
+
+	/*
 	public LookupRequest(BigInteger id) {
 		super(REQUEST_ID);
 		this.id = id;
 		this.uid = UUID.randomUUID();
 	}
-	
+
+	 */
+
 	public LookupRequest(BigInteger id, UUID uid) {
 		super(REQUEST_ID);
 		this.id = id;

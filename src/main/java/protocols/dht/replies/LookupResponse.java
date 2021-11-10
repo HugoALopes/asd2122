@@ -16,7 +16,7 @@ public class LookupResponse extends ProtoReply {
     private List<Host> host;
 
     public LookupResponse(BigInteger id, List<Host> host) {
-        super(StoreOKReply.REPLY_ID);
+        super(this.REPLY_ID);
         this.id=id;
         this.host=host;
     }

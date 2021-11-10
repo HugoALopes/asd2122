@@ -8,6 +8,7 @@ import protocols.dht.requests.LookupRequest;
 import protocols.storage.messages.SaveMessage;
 import protocols.storage.messages.SuccessSaveMessage;
 import protocols.storage.replies.RetrieveFailedReply;
+import protocols.storage.replies.RetrieveOKReply;
 import protocols.storage.replies.StoreOKReply;
 import protocols.storage.requests.RetrieveRequest;
 import protocols.storage.requests.StoreRequest;
@@ -22,10 +23,7 @@ import pt.unl.fct.di.novasys.network.data.Host;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 import static utils.HashGenerator.generateHash;
 
@@ -45,7 +43,7 @@ public class Storage extends GenericProtocol {
 
     private final Map<BigInteger, CacheContent> cache;
     private final Map<BigInteger, byte[]> store;
-    private final Map<Integer, Operation> context;
+    private final Map<UUID, Operation> context;
     private int contextId;
 
     private boolean channelReady;
@@ -111,7 +109,7 @@ public class Storage extends GenericProtocol {
         registerMessageSerializer(cId, SaveMessage.MSG_ID, SaveMessage.serializer);
         /*---------------------- Register Message Handlers -------------------------- */
         try {
-            registerMessageHandler(cId, SaveMessage.MSG_ID, this::uponSaveMessage, this::uponMsgFail);
+            registerMessageHandler(cId, SaveMessage.MSG_ID, this::uponSaveMessage, this::uponSaveMsgFail);
             registerMessageHandler(cId, SuccessSaveMessage.MSG_ID, this::uponSuccessSaveMessage, this::uponFailSave);
         } catch (HandlerRegistrationException e) {
             logger.error("Error registering message handler: " + e.getMessage());
@@ -123,8 +121,15 @@ public class Storage extends GenericProtocol {
     }
 
     /*--------------------------------- AUX ---------------------------------------- */
-    private int nextContext(){
-        return (contextId==Integer.MAX_VALUE)?0:contextId++;
+    private int nextContext(){ return (contextId==Integer.MAX_VALUE)?0:contextId++; }
+
+    private void findHost(Operation op){
+
+        UUID cont = UUID.randomUUID();
+        context.put(cont, op);//new Operation(true, id, request.getName()) );
+        //find "saver" host
+        LookupRequest getHost = new LookupRequest( op.getId(), cont);
+        sendRequest(getHost, DHT_PROTOCOL);
     }
 
     /*--------------------------------- Requests ---------------------------------------- */
@@ -135,11 +140,7 @@ public class Storage extends GenericProtocol {
         byte[] content = request.getContent();
         cache.put(id, new CacheContent(LocalDateTime.now(),content));
 
-        context.put(nextContext(),new Operation(true, id, request.getName()));
-
-        //find "saver" host
-        LookupRequest getHost = new LookupRequest(id);
-        sendRequest(getHost, DHT_PROTOCOL);
+        findHost(new Operation(true, id, request.getName()));
     }
 
     private void uponRetrieveRequest(RetrieveRequest request, short sourceProto) {
@@ -149,31 +150,41 @@ public class Storage extends GenericProtocol {
         byte[] content = (cache.get(id) == null)?store.get(id):cache.get(id).getContent();
 
         if (content == null) {
-            context.put(nextContext(),new Operation(false, id, request.getName()));
-            LookupRequest getHost = new LookupRequest(id);
-            sendRequest(getHost, DHT_PROTOCOL);
+            findHost(new Operation(false, id, request.getName()));
         } else {
-            //TODO - delete context
-            sendReply(new StoreOKReply(request.getName(), null), APP_PROTOCOL);
+            //TODO - uuid pode ser random? - provavelmente sim
+            sendReply(new RetrieveOKReply(request.getName(), null, content) , APP_PROTOCOL);
         }
     }
 
     /*--------------------------------- Replies ---------------------------------------- */
     //TODO - change for host[] -> change get(0) - context inside msg's
     private void uponLookupResponse(LookupResponse response, short sourceProto) {
+        UUID responseUID = UUID.randomUUID(); //TODO - remove when uuid in response done
+        UUID contID = responseUID;
         List<Host> hostList = response.getHost();
-        context.get(0).setHostList(hostList);
+        context.get(contID).setHostList(hostList);
 
-        byte[] content= cache.get(response.getObjId()).getContent();
+        if (context.get(contID).getOpType()){ //True if insert/Put; False if retrieve/Get
+            byte[] content= cache.get(response.getObjId()).getContent();
 
-        hostList.forEach(host -> {
-            if (host.equals(me))
-                store.put(response.getObjId(), content);
-        });
+            hostList.forEach(host -> {
+                if (host.equals(me)) {
+                    store.put(response.getObjId(), content);
+                    sendReply(new StoreOKReply(context.get(contID).getName(), contID),APP_PROTOCOL);
+                }
+            });
 
-        Host host = context.get(0).getHost();
-        SaveMessage requestMsg = new SaveMessage(null,response.getObjId(), host, content);
-        sendMessage(requestMsg, host);
+            hostList.forEach(host -> {
+                SaveMessage requestMsg = new SaveMessage(contID,response.getObjId(), host, content);
+                sendMessage(requestMsg, host);
+            });
+
+        } else {
+            Host host = context.get(contID).getHost();
+            //SaveMessage requestMsg = new SaveMessage(contID,response.getObjId(), host, content);
+            //sendMessage(requestMsg, host);
+        }
     }
 
     /*--------------------------------- Messages ---------------------------------------- */
@@ -183,25 +194,28 @@ public class Storage extends GenericProtocol {
     }
 
     private void uponSuccessSaveMessage(SuccessSaveMessage msg, Host host, short proto, int channelId) {
-        //TODO - delete context
-        sendReply(new StoreOKReply(msg.getName(), msg.getUid()),APP_PROTOCOL);
+        sendReply(new StoreOKReply(context.get(msg.getUid()).getName(), msg.getUid()),APP_PROTOCOL);
+        context.remove(msg.getUid());
     }
     
-    private void uponMsgFail(ProtoMessage msg, Host host, short destProto,
-                             Throwable throwable, int channelId) {
+    private void uponSaveMsgFail(ProtoMessage msg, Host host, short destProto,
+                                 Throwable throwable, int channelId) {
         //If a message fails to be sent, for whatever reason, log the message and the reason
         logger.error("Message {} to {} failed, reason: {}", msg, host, throwable);
     }
 
-    //TODO - check host
+    //TODO - check host + check if clause
     private void uponFailSave(SuccessSaveMessage msg, Host host, short proto, Throwable throwable, int channelId) {
         logger.error("Retrieve of {} failed, reason: {}", msg.getId(), throwable);
-        if(context.get(0).nextHost()){
-            SaveMessage requestMsg = new SaveMessage(null,context.get(0).getId(), host,
-                    cache.get(context.get(0).getId()).getContent());
-            sendMessage(requestMsg, host);
-        } else
-            sendReply(new RetrieveFailedReply(msg.getName(),msg.getUid()),APP_PROTOCOL);
+
+        if(context.get(msg.getUid()).nextHost() && cache.get(context.get(msg.getUid()).getId()) != null ){
+            SaveMessage requestMsg = new SaveMessage(msg.getUid(),context.get(msg.getUid()).getId(), host,
+                    cache.get(context.get(msg.getUid()).getId()).getContent());
+            sendMessage(requestMsg, context.get(msg.getUid()).getHost());
+        } else {
+            sendReply(new RetrieveFailedReply(msg.getName(), msg.getUid()), APP_PROTOCOL);
+            context.remove(msg.getUid());
+        }
     }
 
     /*--------------------------------- Timers ---------------------------------------- */
@@ -210,7 +224,7 @@ public class Storage extends GenericProtocol {
         cache.forEach((id,obj) -> {
             if (obj.getTime().isBefore(present)) {
                 cache.remove(id);
-                logger.info("Removed from cache {}", id);
+                logger.debug("Item {} removed from cache", id);
             }
         });
     }

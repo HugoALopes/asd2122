@@ -29,6 +29,8 @@ public class Operation {
         return opType?INSERT:GET;
     }
 
+    public boolean getOpType(){ return opType; } //True if insert/Put; False if retrieve/Get
+
     public BigInteger getId() {
         return id;
     }
