@@ -1,7 +1,6 @@
 package protocols.storage.messages;
 
 import io.netty.buffer.ByteBuf;
-import protocols.storage.requests.StoreRequest;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 import pt.unl.fct.di.novasys.network.ISerializer;
 import pt.unl.fct.di.novasys.network.data.Host;
@@ -10,9 +9,9 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.UUID;
 
-public class SaveMessage extends ProtoMessage {
+public class ThereYouGoMessage extends ProtoMessage {
 
-    public static final short MSG_ID = 230;
+    public static final short MSG_ID = 234;
 
     private final UUID mid;
     private BigInteger id;
@@ -21,12 +20,12 @@ public class SaveMessage extends ProtoMessage {
 
     @Override
     public String toString() {
-        return "SaveMessage{" +
+        return "ThereYouGoMessage{" +
                 "mid=" + mid +
                 '}';
     }
 
-    public SaveMessage(UUID mid, BigInteger id, Host host, byte[] content) {
+    public ThereYouGoMessage(UUID mid, BigInteger id, Host host, byte[] content) {
         super(MSG_ID);
         this.mid=mid;
         this.id = id;
@@ -51,26 +50,26 @@ public class SaveMessage extends ProtoMessage {
     }
 
     //TODO - check serializer
-    public static ISerializer<SaveMessage> serializer = new ISerializer<>() {
+    public static ISerializer<ThereYouGoMessage> serializer = new ISerializer<>() {
         @Override
-        public void serialize(SaveMessage saveMessage, ByteBuf out) throws IOException {
-            out.writeLong(saveMessage.mid.getMostSignificantBits());
-            out.writeLong(saveMessage.mid.getLeastSignificantBits());
-            Host.serializer.serialize(saveMessage.getHost(), out);
-            out.writeShort(saveMessage.getId());
-            byte[] objId = saveMessage.getObjId().toByteArray();
+        public void serialize(ThereYouGoMessage ThereYouGoMessage, ByteBuf out) throws IOException {
+            out.writeLong(ThereYouGoMessage.mid.getMostSignificantBits());
+            out.writeLong(ThereYouGoMessage.mid.getLeastSignificantBits());
+            Host.serializer.serialize(ThereYouGoMessage.getHost(), out);
+            out.writeShort(ThereYouGoMessage.getId());
+            byte[] objId = ThereYouGoMessage.getObjId().toByteArray();
             out.writeInt(objId.length);
             if (objId.length > 0) {
                 out.writeBytes(objId);
             }
-            out.writeInt(saveMessage.content.length);
-            if (saveMessage.content.length > 0) {
-                out.writeBytes(saveMessage.content);
+            out.writeInt(ThereYouGoMessage.content.length);
+            if (ThereYouGoMessage.content.length > 0) {
+                out.writeBytes(ThereYouGoMessage.content);
             }
         }
 
         @Override
-        public SaveMessage deserialize(ByteBuf in) throws IOException {
+        public ThereYouGoMessage deserialize(ByteBuf in) throws IOException {
             long firstLong = in.readLong();
             long secondLong = in.readLong();
             UUID mid = new UUID(firstLong, secondLong);
@@ -87,7 +86,7 @@ public class SaveMessage extends ProtoMessage {
                 in.readBytes(content);
 
             //TODO - Check
-            return new SaveMessage(mid, objId, sender, content);
+            return new ThereYouGoMessage(mid, objId, sender, content);
         }
     };
 }
