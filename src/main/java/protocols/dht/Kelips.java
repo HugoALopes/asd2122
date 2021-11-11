@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.*;
 import java.net.InetAddress;
-import java.text.Normalizer.Form;
 
 import static utils.HashGenerator.generateHash;
 
@@ -65,16 +64,16 @@ public class Kelips extends GenericProtocol {
     private Set<Host> agView;
     private Map<Integer, Set<Host>> contacts;
     private Map<BigInteger, Host> filetuples;
-    
+
     private Map<Integer, Set<Host>> candidates;
 
     public Kelips(Host self, Properties props) throws IOException, HandlerRegistrationException {
         super(PROTOCOL_NAME, PROTOCOL_ID);
-        
+
         this.me = self;
         this.agNum = Integer.parseInt(props.getProperty("agNum"));
         myAG = generateHash(me.toString()).mod(BigInteger.valueOf(agNum)).intValueExact();
-        
+
         channelId = 0;
 
         pending = new HashMap<>();
@@ -101,10 +100,11 @@ public class Kelips extends GenericProtocol {
         registerMessageHandler(channelId, KelipsJoinRequest.REQUEST_ID, this::uponJoinMessage, this::uponMsgFail);
         registerMessageHandler(channelId, KelipsJoinReply.REQUEST_ID, this::uponJoinReplyMessage, this::uponMsgFail);
         registerMessageHandler(channelId, KelipsInformRequest.REQUEST_ID, this::uponInformMessage, this::uponMsgFail);
-        registerMessageHandler(channelId, GetFileRequest.REQUEST_ID, this::uponGetFileRequest, this::uponMsgFail);
+        registerMessageHandler(channelId, GetFileMessage.REQUEST_ID, this::uponGetFileMessage, this::uponMsgFail);
+        registerMessageHandler(channelId, GetDiffAgFileMessage.REQUEST_ID, this::uponGetDiffAgFileMessage, this::uponMsgFail);
         registerMessageHandler(channelId, GetFileReply.REQUEST_ID, this::uponLookupReplyMessage, this::uponMsgFail);
 
-   
+
         /*--------------------- Register Request Handlers ----------------------------- */
         registerRequestHandler(LookupRequest.REQUEST_ID, this::uponLookupRequest);
 
@@ -119,7 +119,7 @@ public class Kelips extends GenericProtocol {
         registerChannelEventHandler(channelId, OutConnectionFailed.EVENT_ID, this::uponOutConnectionFailed);
         registerChannelEventHandler(channelId, InConnectionUp.EVENT_ID, this::uponInConnectionUp);
         registerChannelEventHandler(channelId, InConnectionDown.EVENT_ID, this::uponInConnectionDown);
-        
+
         /*--------------------- Notifications subscribed ----------------------------- */
         subscribeNotification(DeliverNotification.NOTIFICATION_ID, this::uponDeliver);
     }
@@ -143,9 +143,9 @@ public class Kelips extends GenericProtocol {
     }
 
     /*--------------------- Notifications subscribed ----------------------------- */
-    private void uponDeliver(DeliverNotification not, short sourceProto){
+    private void uponDeliver(DeliverNotification not, short sourceProto) {
         Host sender = not.getSender();
-        
+
         BigInteger hash = HashGenerator.generateHash(sender.toString());
         int fromID = (hash.intValue() % this.agNum);
 
@@ -153,14 +153,14 @@ public class Kelips extends GenericProtocol {
         candidates = ig.getContacts();
 
         Set<Host> aux = candidates.get(fromID);
-        if(aux == null){
+        if (aux == null) {
             aux = new HashSet<Host>();
             aux = ig.getAgView();
             candidates.put(fromID, aux);
         }
 
-        for(BigInteger key: ig.getFileTuples().keySet()){
-            if(!filetuples.containsKey(key))
+        for (BigInteger key : ig.getFileTuples().keySet()) {
+            if (!filetuples.containsKey(key))
                 filetuples.put(key, ig.getFileTuples().get(key));
         }
     }
@@ -173,7 +173,7 @@ public class Kelips extends GenericProtocol {
         Set<Reason> reasons = pending.remove(peer);
         logger.debug("Out Connection to {} is up.", peer);
         if (reasons != null) {
-            for(Reason reason: reasons){
+            for (Reason reason : reasons) {
                 switch (reason) {
                     case NEW_JOIN: // SEND JOIN REQUEST DE UM NOVO NO
                         sendMessage(new KelipsJoinRequest(this.me), peer);
@@ -199,7 +199,7 @@ public class Kelips extends GenericProtocol {
     private void uponOutConnectionDown(OutConnectionDown event, int channelId) {
         Host peer = event.getNode();
         logger.debug("Out Connection to {} is down cause {}", peer, event.getCause());
-        
+
         BigInteger hash = HashGenerator.generateHash(peer.toString());
         int fromID = hash.mod(BigInteger.valueOf(this.agNum)).intValueExact();
         this.removeContact(fromID, peer);
@@ -231,14 +231,14 @@ public class Kelips extends GenericProtocol {
 
 
     /* --------------------------------- Reply ---------------------------- */
-    
+
 
     /* --------------------------------- Messages ---------------------------- */
     private void uponInformMessage(KelipsInformRequest msg, Host from, short sourceProto, int channelId) {
         BigInteger hash = HashGenerator.generateHash(from.toString());
         int fromID = hash.mod(BigInteger.valueOf(this.agNum)).intValueExact();
         //Sao do mesmo afinnity group
-        if(fromID == myAG){
+        if (fromID == myAG) {
             agView.add(from);
         } //Sao de grupos diferentes
 
@@ -248,71 +248,106 @@ public class Kelips extends GenericProtocol {
     private void uponJoinReplyMessage(KelipsJoinReply msg, Host from, short sourceProto, int channelId) {
 
         Host c = null;
-        if(!msg.getContacts().containsKey(this.myAG)){
+        if (!msg.getContacts().containsKey(this.myAG)) {
             this.agView = msg.getAgView();
             this.filetuples = msg.getFileTuples();
             this.contacts = msg.getContacts();
-        }else{
+        } else {
             Set<Host> aux = msg.getContacts().get(this.myAG);
-            int index = (int)(Math.random() * aux.size());
+            int index = (int) (Math.random() * aux.size());
             c = (Host) aux.toArray()[index];
         }
 
-        if(c == null){
-            for(Host h: this.agView)
+        if (c == null) {
+            for (Host h : this.agView)
                 connect(h, Reason.INFORM);
         }
-        
-        if(c != null)
+
+        if (c != null)
             connect(c, Reason.JOIN);
     }
 
     private void uponJoinMessage(KelipsJoinRequest msg, Host from, short sourceProto, int channelId) {
         BigInteger hash = HashGenerator.generateHash(from.toString());
         int fromID = hash.mod(BigInteger.valueOf(this.agNum)).intValueExact();
-        
+
         //Sao do mesmo afinnity group
-        if(fromID == myAG){
+        if (fromID == myAG) {
             agView.add(from);
         } //Sao de grupos diferentes
-        else{
+        else {
             Set<Host> aux = contacts.get(fromID);
-            if(aux == null){
+            if (aux == null) {
                 aux = new HashSet<Host>();
                 aux.add(from);
-            }
-            else if(aux.size() < this.agNum){
+            } else if (aux.size() < this.agNum) {
                 aux.add(from);
             }
             contacts.put(fromID, aux);
-        }   
+        }
         connect(from, Reason.JOIN);
     }
 
-    private void uponGetFileRequest(GetFileRequest msg, Host from, short sourceProto, int channelId){
-        Host host = filetuples.get(msg.getObjID());
-        GetFileReply msgR = new GetFileReply(msg.getObjID(), msg.getUid());
-        //Hugo - esta msg nao devia ser para quem pediu em vez de para o dono do ficheiro?
-        sendMessage(msgR, host);
+    private void uponGetFileMessage(GetFileMessage msg, Host from, short sourceProto, int channelId) {
+        Host host = filetuples.get(msg.getObjID()); //may be null
+        GetFileReply msgR = new GetFileReply(msg.getObjID(), msg.getUid(), host);
+        sendMessage(msgR, from);
     }
 
-    private void uponLookupReplyMessage(GetFileReply msg, Host from, short sourceProto, int channelId){
-        if(ongoinglookUp.containsKey(msg.getUid())){
-            List<Host> hlist = new ArrayList<>();
-            //Hugo - not from, este pode so saber onde esta (devia estar dentro da msg) e nao ter o ficheiro
-            hlist.add(from);
-            //Hugo - msgUID foi alterado em new GetFileRequest... ia dar asneira
-            LookupResponse resp = new LookupResponse(msg.getUid(), msg.getObjID(), hlist);
-            sendReply(resp, Storage.PROTOCOL_ID);
-            ongoinglookUp.remove(msg.getUid());
+    //adapted from lookup
+    @SuppressWarnings("DuplicatedCode")
+    private void uponGetDiffAgFileMessage(GetDiffAgFileMessage receivedMsg, Host from, short sourceProto, int channelId) {
+        Host host;
+
+        if (receivedMsg.getOpType()) {
+            host = (Host) agView.toArray()[(int) (Math.random() * agView.size())];
+            filetuples.put(receivedMsg.getObjID(), host);
+
+            GetFileReply msgR = new GetFileReply(receivedMsg.getObjID(), receivedMsg.getUid(), host);
+            sendMessage(msgR, from);
+        } else {
+
+            host = filetuples.get(receivedMsg.getObjID());
+
+            if (host == null) {//I do not know the file
+                GetFileMessage msg =
+                        new GetFileMessage(receivedMsg.getUid(), receivedMsg.getObjID());
+
+                ongoinglookUp.putIfAbsent(msg.getUid(), agView);
+
+                for (Host h : agView) { sendMessage(msg, h); }
+
+            } else {
+                GetFileReply msgR = new GetFileReply(receivedMsg.getObjID(), receivedMsg.getUid(), host);
+                sendMessage(msgR, from);
+            }
+        }
+    }
+
+    private void uponLookupReplyMessage(GetFileReply msg, Host from, short sourceProto, int channelId) {
+        if (ongoinglookUp.containsKey(msg.getUid())) {
+
+            if (msg.getHost() == null) {
+                ongoinglookUp.get(msg.getUid()).remove(msg.getHost());
+
+                if (ongoinglookUp.get(msg.getUid()).isEmpty())
+                    ongoinglookUp.remove(msg.getUid());
+
+            } else { //if not found - do nothing for now... lets test and see
+
+                List<Host> hlist = new ArrayList<>();
+                hlist.add(msg.getHost());
+                LookupResponse resp = new LookupResponse(msg.getUid(), msg.getObjID(), hlist);
+                sendReply(resp, Storage.PROTOCOL_ID);
+                ongoinglookUp.remove(msg.getUid());
+            }
         }
     }
 
     private void uponMsgFail(ProtoMessage msg, Host host, short destProto,
-        Throwable throwable, int channelId){
+                             Throwable throwable, int channelId) {
 
         BigInteger hash = HashGenerator.generateHash(host.toString());
-        //Hugo - nao me parece que esteja certo
         int fromID = (hash.intValue() % this.agNum);
 
         removeContact(fromID, host);
@@ -323,46 +358,69 @@ public class Kelips extends GenericProtocol {
     private void uponLookupRequest(LookupRequest lookupRequest, short sourceProto) {
         int fAG = lookupRequest.getObjID().mod(BigInteger.valueOf(agNum)).intValueExact();
         Host host;
+        List<Host> hostList = new ArrayList<>();
+
         if (fAG == myAG) {
-            host = filetuples.get(lookupRequest.getObjID());
+            //opType - True if insert/Put; False if retrieve/Get
+            if (lookupRequest.getOpType()) {
 
-            if (host == null) {//file on my AG but I do not know it
-                for(Host h: agView){
-                    //TODO - Hugo - be aware UUID random!!
-                    GetFileRequest msg = new GetFileRequest(lookupRequest.getObjID());
-                    sendMessage(msg, h); 
-
-                    //Hugo - em vez disto porque nao gossip?
-                    Set<Host> aux = ongoinglookUp.get(msg.getUid());
-                    if(aux == null)
-                        aux = new HashSet<Host>();
-                    aux.add(h);
-                    ongoinglookUp.put(msg.getUid(), aux);
-                }
-            }else{
-                //Hugo - For sure not a PUT, must be a GET!!
-                List<Host> hostList = new ArrayList<>();
+                host = (Host) agView.toArray()[(int) (Math.random() * agView.size())];
                 hostList.add(host);
+                filetuples.put(lookupRequest.getObjID(), host);
                 LookupResponse reply =
                         new LookupResponse(lookupRequest.getRequestUID(), lookupRequest.getObjID(), hostList);
                 sendReply(reply, Storage.PROTOCOL_ID);
+
+            } else {
+
+                host = filetuples.get(lookupRequest.getObjID());
+
+                if (host == null) {//file on my AG but I do not know it
+
+                    GetFileMessage msg =
+                            new GetFileMessage(lookupRequest.getRequestUID(), lookupRequest.getObjID());
+
+                    ongoinglookUp.putIfAbsent(msg.getUid(), agView); //Hugo - same thing as comment inside for, right?
+
+                    for (Host h : agView) { //Hugo - em vez disto porque nao gossip?
+                        sendMessage(msg, h);
+                        /*
+                        Set<Host> aux = ongoinglookUp.get(msg.getUid());
+                        if (aux == null)
+                            aux = new HashSet<Host>();
+                        aux.add(h);
+                        ongoinglookUp.put(msg.getUid(), aux);
+                         */
+                    }
+
+                } else {
+                    hostList.add(host);
+                    LookupResponse reply =
+                            new LookupResponse(lookupRequest.getRequestUID(), lookupRequest.getObjID(), hostList);
+                    sendReply(reply, Storage.PROTOCOL_ID);
+                }
             }
         } else { // file does not belong my AG
+
+            //opType - True if insert/Put; False if retrieve/Get
+            if (lookupRequest.getOpType()) { /*no need to do nothing*/ }
+
             Set<Host> contact = contacts.get(fAG);
-            if(contact != null){
-                int index = (int)(Math.random() * contact.size());
+            if (contact != null) {
+                int index = (int) (Math.random() * contact.size());
                 Host c = (Host) contact.toArray()[index];
 
-                GetFileRequest msg = new GetFileRequest(lookupRequest.getObjID());
+                GetDiffAgFileMessage msg =
+                        new GetDiffAgFileMessage(lookupRequest.getRequestUID(), lookupRequest.getObjID(),
+                                lookupRequest.getOpType());
                 sendMessage(msg, c);
 
-                //Hugo - as before, em vez disto porque nao gossip?
                 Set<Host> aux = ongoinglookUp.get(msg.getUid());
-                if(aux == null)
+                if (aux == null)
                     aux = new HashSet<Host>();
                 aux.add(c);
                 ongoinglookUp.put(msg.getUid(), aux);
-            } 
+            }
         }
     }
 
@@ -421,11 +479,11 @@ public class Kelips extends GenericProtocol {
 
     /* --------------------------------- Utils ---------------------------- */
     private void connect(Host peer, Reason reason) {
-        if(pending.containsKey(peer)){
+        if (pending.containsKey(peer)) {
             Set<Reason> set = pending.get(peer);
             set.add(reason);
             pending.replace(peer, set);
-        }else{
+        } else {
             Set<Reason> set = new HashSet<>();
             set.add(reason);
             pending.put(peer, set);
@@ -434,30 +492,30 @@ public class Kelips extends GenericProtocol {
     }
 
     @SuppressWarnings("DuplicatedCode")
-    private void removeContact(int fromID, Host peer){
-        if(fromID == myAG){
+    private void removeContact(int fromID, Host peer) {
+        if (fromID == myAG) {
             agView.removeIf(n -> n.equals(peer));
 
             Set<Host> cH = candidates.get(fromID);
-            if(cH != null){
-                for(Host h: cH){
-                    if(!agView.contains(h))
+            if (cH != null) {
+                for (Host h : cH) {
+                    if (!agView.contains(h))
                         agView.add(h);
                 }
             }
-        }else{
+        } else {
             Set<Host> aux = contacts.get(fromID);
             aux.removeIf(n -> n.equals(peer));
 
             Set<Host> cH = candidates.get(fromID);
-            if(cH != null){
-                for(Host h: cH){
-                    if(!aux.contains(h))
+            if (cH != null) {
+                for (Host h : cH) {
+                    if (!aux.contains(h))
                         aux.add(h);
                 }
             }
             contacts.put(fromID, aux);
-        }  
+        }
 
         Set<Host> aux = candidates.get(fromID);
         aux.removeIf(h -> h.equals(peer));
@@ -465,8 +523,8 @@ public class Kelips extends GenericProtocol {
         candidates.put(fromID, aux);
         pending.remove(peer);
 
-        filetuples.forEach((i,h) -> {
-            if(h.equals(peer)) filetuples.remove(i);
+        filetuples.forEach((i, h) -> {
+            if (h.equals(peer)) filetuples.remove(i);
         });
         /*
         for(Host h: filetuples.values()){
@@ -479,7 +537,7 @@ public class Kelips extends GenericProtocol {
     private void broadcastRequest(GossipTimer timer, long timerId) {
         InformationGossip msg = new InformationGossip(contacts, filetuples, agView);
         BroadcastRequest request = new BroadcastRequest(UUID.randomUUID(), this.me, Serializer.serialize(msg));
-        
+
         logger.info("Sending: {}  ({})", request.getMsgId(), Serializer.serialize(msg).length);
         //And send it to the dissemination protocol
         //sendRequest(request, FloodBroadcast.PROTOCOL_ID);

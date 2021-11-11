@@ -131,7 +131,7 @@ public class Storage extends GenericProtocol {
         UUID cont = UUID.randomUUID();
         context.put(cont, op);//new Operation(true, id, request.getName()) );
         //find "saver" host
-        LookupRequest getHost = new LookupRequest( op.getId(), cont);
+        LookupRequest getHost = new LookupRequest(op.getId(), cont, op.getOpType());
         sendRequest(getHost, DHT_PROTOCOL);
     }
 
