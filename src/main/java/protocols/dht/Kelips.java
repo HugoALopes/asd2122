@@ -64,7 +64,7 @@ public class Kelips extends GenericProtocol {
     //Soft state do no
     private Set<Host> agView;
     private Map<Integer, Set<Host>> contacts;
-    private Map<Integer, Host> filetuples;
+    private Map<BigInteger, Host> filetuples;
     
     private Map<Integer, Set<Host>> candidates;
 
@@ -159,7 +159,7 @@ public class Kelips extends GenericProtocol {
             candidates.put(fromID, aux);
         }
 
-        for(Integer key: ig.getFileTuples().keySet()){
+        for(BigInteger key: ig.getFileTuples().keySet()){
             if(!filetuples.containsKey(key))
                 filetuples.put(key, ig.getFileTuples().get(key));
         }
@@ -290,15 +290,18 @@ public class Kelips extends GenericProtocol {
     }
 
     private void uponGetFileRequest(GetFileRequest msg, Host from, short sourceProto, int channelId){
-        Host host = filetuples.get(msg.getObjID().intValue());
+        Host host = filetuples.get(msg.getObjID());
         GetFileReply msgR = new GetFileReply(msg.getObjID(), msg.getUid());
+        //Hugo - esta msg nao devia ser para quem pediu em vez de para o dono do ficheiro?
         sendMessage(msgR, host);
     }
 
     private void uponLookupReplyMessage(GetFileReply msg, Host from, short sourceProto, int channelId){
         if(ongoinglookUp.containsKey(msg.getUid())){
             List<Host> hlist = new ArrayList<>();
+            //Hugo - not from, este pode so saber onde esta (devia estar dentro da msg) e nao ter o ficheiro
             hlist.add(from);
+            //Hugo - msgUID foi alterado em new GetFileRequest... ia dar asneira
             LookupResponse resp = new LookupResponse(msg.getUid(), msg.getObjID(), hlist);
             sendReply(resp, Storage.PROTOCOL_ID);
             ongoinglookUp.remove(msg.getUid());
@@ -309,23 +312,27 @@ public class Kelips extends GenericProtocol {
         Throwable throwable, int channelId){
 
         BigInteger hash = HashGenerator.generateHash(host.toString());
+        //Hugo - nao me parece que esteja certo
         int fromID = (hash.intValue() % this.agNum);
-    
+
         removeContact(fromID, host);
     }
 
     /*--------------------------------- Requests ---------------------------------------- */
+    @SuppressWarnings("DuplicatedCode")
     private void uponLookupRequest(LookupRequest lookupRequest, short sourceProto) {
         int fAG = lookupRequest.getObjID().mod(BigInteger.valueOf(agNum)).intValueExact();
         Host host;
         if (fAG == myAG) {
-            host = filetuples.get(lookupRequest.getObjID().intValue());
+            host = filetuples.get(lookupRequest.getObjID());
 
-            if (host == null) {//file do not belong my AG
+            if (host == null) {//file on my AG but I do not know it
                 for(Host h: agView){
+                    //TODO - Hugo - be aware UUID random!!
                     GetFileRequest msg = new GetFileRequest(lookupRequest.getObjID());
                     sendMessage(msg, h); 
 
+                    //Hugo - em vez disto porque nao gossip?
                     Set<Host> aux = ongoinglookUp.get(msg.getUid());
                     if(aux == null)
                         aux = new HashSet<Host>();
@@ -333,6 +340,7 @@ public class Kelips extends GenericProtocol {
                     ongoinglookUp.put(msg.getUid(), aux);
                 }
             }else{
+                //Hugo - For sure not a PUT, must be a GET!!
                 List<Host> hostList = new ArrayList<>();
                 hostList.add(host);
                 LookupResponse reply =
@@ -344,9 +352,11 @@ public class Kelips extends GenericProtocol {
             if(contact != null){
                 int index = (int)(Math.random() * contact.size());
                 Host c = (Host) contact.toArray()[index];
+
                 GetFileRequest msg = new GetFileRequest(lookupRequest.getObjID());
                 sendMessage(msg, c);
 
+                //Hugo - as before, em vez disto porque nao gossip?
                 Set<Host> aux = ongoinglookUp.get(msg.getUid());
                 if(aux == null)
                     aux = new HashSet<Host>();

@@ -7,6 +7,7 @@ import pt.unl.fct.di.novasys.network.ISerializer;
 import pt.unl.fct.di.novasys.network.data.Host;
 import utils.Serializer;
 
+import java.math.BigInteger;
 import java.util.*;
 
 public class KelipsJoinReply extends ProtoMessage{
@@ -16,9 +17,9 @@ public class KelipsJoinReply extends ProtoMessage{
     private Map<Integer, Set<Host>> contacts;
     private Host sender;
     private Set<Host> agView;
-    private Map<Integer, Host> fileTuples;
+    private Map<BigInteger, Host> fileTuples;
 
-    public KelipsJoinReply(Host sender, Map<Integer, Set<Host>> contacts, Map<Integer, Host> fileTuples,
+    public KelipsJoinReply(Host sender, Map<Integer, Set<Host>> contacts, Map<BigInteger, Host> fileTuples,
         Set<Host> agView) {
         super(REQUEST_ID);
         this.contacts = contacts;
@@ -32,7 +33,7 @@ public class KelipsJoinReply extends ProtoMessage{
         return this.sender;
     }
 
-    public Map<Integer, Host> getFileTuples(){
+    public Map<BigInteger, Host> getFileTuples(){
         return this.fileTuples;
     }
 
