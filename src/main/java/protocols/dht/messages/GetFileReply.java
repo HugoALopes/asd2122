@@ -7,7 +7,7 @@ import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 import pt.unl.fct.di.novasys.network.data.Host;
 
 public class GetFileReply extends ProtoMessage{
-    public final static short REQUEST_ID = 1071;
+    public final static short REQUEST_ID = 133;
 	
 	private UUID uid;
     private BigInteger objID;

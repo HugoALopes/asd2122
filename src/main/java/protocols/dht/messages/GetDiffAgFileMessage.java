@@ -6,7 +6,7 @@ import java.math.BigInteger;
 import java.util.UUID;
 
 public class GetDiffAgFileMessage extends ProtoMessage{
-    public final static short REQUEST_ID = 1070;
+    public final static short REQUEST_ID = 135;
 
 	private UUID uid;
     private BigInteger objID;
