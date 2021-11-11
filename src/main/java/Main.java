@@ -4,6 +4,7 @@ import java.util.Properties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import protocols.Broadcast.ProbReliableBroadcast;
 import protocols.apps.AutomatedApplication;
 import protocols.dht.Kelips;
 import protocols.storage.Storage;
@@ -52,11 +53,15 @@ public class Main {
         //DHTProtocol dht = new ...; /**You need to uncomment this line and define the protocol**/
         Kelips dht = new Kelips(myself, props);
 
+        //Gossip
+        ProbReliableBroadcast gossip = new ProbReliableBroadcast(props, myself);
+
         //Register applications in babel
         babel.registerProtocol(app);
         /** You need to uncomment the next two lines when you have protocols to fill those gaps **/
         babel.registerProtocol(storage);
         babel.registerProtocol(dht);
+        babel.registerProtocol(gossip);
 
         //Init the protocols. This should be done after creating all protocols, since there can be inter-protocol
         //communications in this step.
@@ -64,6 +69,7 @@ public class Main {
         /** You need to uncomment the next two lines when you have protocols to fill those gaps **/
         storage.init(props);
         dht.init(props);
+        gossip.init(props);
 
         //Start babel and protocol threads
         babel.start();
