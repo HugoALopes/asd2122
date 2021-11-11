@@ -92,7 +92,7 @@ public class Storage extends GenericProtocol {
     }
 
     @Override
-    public void init(Properties properties) {
+    public void init(Properties props) {
 
         //setup timer to delete cache
         setupPeriodicTimer(new CacheDeleteTimer(), CACHE_TIMEOUT, CACHE_TIMEOUT);
