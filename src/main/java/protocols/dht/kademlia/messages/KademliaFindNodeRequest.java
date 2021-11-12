@@ -13,9 +13,9 @@ public class KademliaFindNodeRequest extends ProtoMessage{
     private BigInteger idToFind;
     private Node sender;
 	
-	public KademliaFindNodeRequest(BigInteger nodeToFind, Node sender) {
+	public KademliaFindNodeRequest(UUID mid, BigInteger nodeToFind, Node sender) {
 		super(MESSAGE_ID);
-		this.uid = UUID.randomUUID();
+		this.uid = mid;
         this.idToFind = nodeToFind;
         this.sender = sender;
 	}
