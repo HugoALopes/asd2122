@@ -4,7 +4,9 @@ import java.util.Properties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import protocols.broadcast.ProbReliableBroadcast;
 import protocols.apps.AutomatedApplication;
+import protocols.dht.kelips.Kelips;
 import protocols.storage.Storage;
 import pt.unl.fct.di.novasys.babel.core.Babel;
 import pt.unl.fct.di.novasys.network.data.Host;
@@ -44,24 +46,30 @@ public class Main {
         logger.info("Hello, I am {}", myself);
 
         // Application
-        AutomatedApplication app = new AutomatedApplication(myself, props, (short) 0 /**change this parameter to map the id of the Storage Protocol -> 200**/);
+        AutomatedApplication app = new AutomatedApplication(myself, props, Storage.PROTOCOL_ID);
         // Storage Protocol
-        Storage storage = new Storage(null,myself); /**You need to uncomment this line and define the protocol**/
+        Storage storage = new Storage(props,myself); /**You need to uncomment this line and define the protocol**/
         // DHT Protocol
         //DHTProtocol dht = new ...; /**You need to uncomment this line and define the protocol**/
+        Kelips dht = new Kelips(myself, props);
+
+        //Gossip
+        ProbReliableBroadcast gossip = new ProbReliableBroadcast(props, myself);
 
         //Register applications in babel
         babel.registerProtocol(app);
         /** You need to uncomment the next two lines when you have protocols to fill those gaps **/
         babel.registerProtocol(storage);
-        //babel.registerProtocol(dht);
+        babel.registerProtocol(dht);
+        babel.registerProtocol(gossip);
 
         //Init the protocols. This should be done after creating all protocols, since there can be inter-protocol
         //communications in this step.
         app.init(props);
         /** You need to uncomment the next two lines when you have protocols to fill those gaps **/
         storage.init(props);
-        //dht.init(props);
+        dht.init(props);
+        gossip.init(props);
 
         //Start babel and protocol threads
         babel.start();

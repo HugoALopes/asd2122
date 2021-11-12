@@ -4,7 +4,7 @@ import pt.unl.fct.di.novasys.babel.generic.ProtoTimer;
 
 public class InfoTimer extends ProtoTimer {
 
-    public static final short TIMER_ID = 103;
+    public static final short TIMER_ID = 503;
 
     public InfoTimer() {
         super(TIMER_ID);
