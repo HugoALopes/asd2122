@@ -9,7 +9,7 @@ import java.util.Random;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import channel.notifications.ChannelCreated;
+import membership.common.ChannelCreated;
 import protocols.apps.timers.ExitTimer;
 import protocols.apps.timers.RequestTimer;
 import protocols.apps.timers.StartTimer;
