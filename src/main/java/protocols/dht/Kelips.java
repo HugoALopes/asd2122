@@ -51,6 +51,7 @@ public class Kelips extends GenericProtocol {
 
     //#affinity groups
     private final int agNum;
+    private int numContacts;
 
     //informaçao do proprio
     private final Host me;
@@ -70,6 +71,7 @@ public class Kelips extends GenericProtocol {
     public Kelips(Host self, Properties props) throws IOException, HandlerRegistrationException {
         super(PROTOCOL_NAME, PROTOCOL_ID);
 
+        this.numContacts = 5;
         this.me = self;
         this.agNum = Integer.parseInt(props.getProperty("agNum"));
         myAG = generateHash(me.toString()).mod(BigInteger.valueOf(agNum)).intValueExact();
@@ -139,7 +141,7 @@ public class Kelips extends GenericProtocol {
             }
         }
 
-        setupPeriodicTimer(new GossipTimer(), 5000, 5000);
+        setupPeriodicTimer(new GossipTimer(), 5000, 20000);
     }
 
     /*--------------------- Notifications subscribed ----------------------------- */
@@ -150,19 +152,42 @@ public class Kelips extends GenericProtocol {
         int fromID = (hash.intValue() % this.agNum);
 
         InformationGossip ig = Serializer.deserialize(not.getMsg());
-        candidates = ig.getContacts();
+        Map<Integer, Set<Host>> contactsIG = ig.getContacts();
+        Set<Host> view = ig.getAgView();
 
-        Set<Host> aux = candidates.get(fromID);
-        if (aux == null) {
-            aux = new HashSet<Host>();
-            aux = ig.getAgView();
-            candidates.put(fromID, aux);
+        if(fromID == this.myAG){
+            for(Host h: view){
+                if(!this.agView.contains(h))
+                    view.add(h);
+            }
+        }else{
+            contactsIG.put(fromID, view);
         }
-
+        
+        for(Integer key: contactsIG.keySet()){
+            if(!contacts.containsKey(key) && key != this.myAG){
+                contacts.put(key, contactsIG.get(key));
+            }
+            else if(contacts.containsKey(key) && key != this.myAG){
+                Set<Host> aux = contacts.get(key);
+                Set<Host> aux2 = contactsIG.get(key);
+                Iterator<Host> it = aux2.iterator();
+                while(it.hasNext() && aux.size() < this.numContacts){
+                    Host igH = it.next();
+                    aux.add(igH);
+                    aux2.remove(igH);
+                }
+                contacts.put(key, aux);
+                contactsIG.put(key, aux2);
+            }
+        }
+        
         for (BigInteger key : ig.getFileTuples().keySet()) {
             if (!filetuples.containsKey(key))
                 filetuples.put(key, ig.getFileTuples().get(key));
         }
+
+        candidates = contactsIG;
     }
 
     /*--------------------------------- TCP ---------------------------------------- */
@@ -279,10 +304,8 @@ public class Kelips extends GenericProtocol {
             Set<Host> aux = contacts.get(fromID);
             if (aux == null) {
                 aux = new HashSet<Host>();
-                aux.add(from);
-            } else if (aux.size() < this.agNum) {
-                aux.add(from);
-            }
+            } 
+            aux.add(from);
             contacts.put(fromID, aux);
         }
         connect(from, Reason.JOIN);
