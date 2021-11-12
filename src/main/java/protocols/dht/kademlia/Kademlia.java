@@ -28,7 +28,7 @@ public class Kademlia extends GenericProtocol {
     private static final Logger logger = LogManager.getLogger(Kademlia.class);
 
     // Protocol information, to register in babel
-    public final static short PROTOCOL_ID = 200;
+    public final static short PROTOCOL_ID = 1100;
     public final static String PROTOCOL_NAME = "kademlia";
 
     private Map<BigInteger, QueryState> queriesByIdToFind;
