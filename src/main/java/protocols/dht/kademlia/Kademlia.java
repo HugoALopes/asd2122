@@ -14,6 +14,10 @@ import java.util.*;
 import pt.unl.fct.di.novasys.babel.core.GenericProtocol;
 import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
+import pt.unl.fct.di.novasys.channel.tcp.TCPChannel;
+import pt.unl.fct.di.novasys.channel.tcp.events.InConnectionDown;
+import pt.unl.fct.di.novasys.channel.tcp.events.OutConnectionDown;
+import pt.unl.fct.di.novasys.channel.tcp.events.OutConnectionFailed;
 import pt.unl.fct.di.novasys.channel.tcp.events.OutConnectionUp;
 import pt.unl.fct.di.novasys.network.data.Host;
 
@@ -34,26 +38,38 @@ public class Kademlia extends GenericProtocol {
     private int alfa;
     private int k;
 
-    public Kademlia(Host self, int alfa) throws HandlerRegistrationException{
+    public Kademlia(Host self, Properties props) throws HandlerRegistrationException, IOException{
         super(PROTOCOL_NAME, PROTOCOL_ID);
-        this.alfa = alfa;
         k_buckets_list = new ArrayList<List<Node>>();
         my_node = new Node(self, HashGenerator.generateHash(self.toString()));
-
         queriesByIdToFind = new HashMap<>();
+        alfa = Integer.parseInt(props.getProperty("alfaValue"));
+        k = Integer.parseInt(props.getProperty("kValue"));
+
+        String cMetricsInterval = props.getProperty("channel_metrics_interval", "10000"); //10 seconds
+
+        //Create a properties object to setup channel-specific properties. See the channel description for more details.
+        Properties channelProps = new Properties();
+        channelProps.setProperty(TCPChannel.ADDRESS_KEY, props.getProperty("address")); //The address to bind to
+        channelProps.setProperty(TCPChannel.PORT_KEY, props.getProperty("port")); //The port to bind to
+        channelProps.setProperty(TCPChannel.METRICS_INTERVAL_KEY, cMetricsInterval); //The interval to receive channel metrics
+        channelProps.setProperty(TCPChannel.HEARTBEAT_INTERVAL_KEY, "1000"); //Heartbeats interval for established connections
+        channelProps.setProperty(TCPChannel.HEARTBEAT_TOLERANCE_KEY, "3000"); //Time passed without heartbeats until closing a connection
+        channelProps.setProperty(TCPChannel.CONNECT_TIMEOUT_KEY, "1000"); //TCP connect timeout
+        int channelId = createChannel(TCPChannel.NAME, channelProps); //Create the channel with the given properties
 
         /*----------------------------- Register Message Handlers ----------------------------- */
-        //TODO: alterar o 0 para o valor do channelId
-        registerMessageHandler(0, KademliaFindNodeRequest.MESSAGE_ID, this::uponFindNode, this::uponMsgFail);
-        registerMessageHandler(0, KademliaFindNodeReply.MESSAGE_ID, this::uponFindNodeReply, this::uponMsgFail);
+        registerMessageHandler(channelId, KademliaFindNodeRequest.REQUEST_ID, this::uponFindNode, this::uponMsgFail);
+        registerMessageHandler(channelId, KademliaFindNodeReply.REQUEST_ID, this::uponFindNodeReply, this::uponMsgFail);
 
         /*----------------------------- Register Request Handlers ----------------------------- */
         registerRequestHandler(LookupRequest.REQUEST_ID, this::uponLookupRequest);
 
         /*------------------------------------- TCPEvents ------------------------------------- */
-        //TODO: alterar o 0 para o valor do channelId
-        //TODO: faltam todos os tcp events
-        registerChannelEventHandler(0, OutConnectionUp.EVENT_ID, this::uponOutConnectionUp);
+        registerChannelEventHandler(channelId, OutConnectionUp.EVENT_ID, this::uponOutConnectionUp);
+        registerChannelEventHandler(channelId, OutConnectionDown.EVENT_ID, this::uponOutConnectionDown);
+        registerChannelEventHandler(channelId, OutConnectionFailed.EVENT_ID, this::uponOutConnectionFailed);
+        registerChannelEventHandler(channelId, InConnectionDown.EVENT_ID, this::uponInConnectionDown);
     }
 
     @Override
@@ -74,7 +90,6 @@ public class Kademlia extends GenericProtocol {
     }
 
     /* --------------------------------- Messages ---------------------------- */
-    //TODO
     private void uponMsgFail(ProtoMessage msg, Host host, short destProto, Throwable throwable, int channelId) {
 
     }
@@ -131,6 +146,29 @@ public class Kademlia extends GenericProtocol {
         node_lookup(my_node.getNodeId());
     }
 
+    private void uponOutConnectionDown(OutConnectionDown event, int channelId) {
+        Host peer = event.getNode();
+        logger.debug("Out Connection to {} is down cause {}", peer, event.getCause());
+
+        Node n = new Node(peer, HashGenerator.generateHash(peer.toString()));
+        this.remove_from_k_bucket(n);
+    }
+
+    private void uponOutConnectionFailed(OutConnectionFailed<ProtoMessage> event, int channelId) {
+        Host peer = event.getNode();
+        logger.debug("Connection to {} failed cause: {}", peer, event.getCause());
+    }
+
+
+    //A connection someone established to me is disconnected.
+    private void uponInConnectionDown(InConnectionDown event, int channelId) {
+        Host peer = event.getNode();
+        logger.debug("In Connection to {} is down cause {}", peer, event.getCause());
+
+        Node n = new Node(peer, HashGenerator.generateHash(peer.toString()));
+        this.remove_from_k_bucket(n);
+    }
+
     /* --------------------------------- Utils ---------------------------- */
     private void insert_on_k_bucket(Node node) {
         int distance = calculate_dist(node.getNodeId(), my_node.getNodeId());
@@ -145,6 +183,15 @@ public class Kademlia extends GenericProtocol {
             k_bucket.add(node); 
         } else
             k_bucket.add(node);
+    }
+
+    private void remove_from_k_bucket(Node node){
+        int distance = calculate_dist(node.getNodeId(), my_node.getNodeId());
+        int i = (int) (Math.log(distance) / Math.log(2));
+
+        List<Node> k_bucket = k_buckets_list.get(i);
+        if(k_bucket.contains(node))
+            k_bucket.remove(node);
 
     }
  
