@@ -59,8 +59,8 @@ public class Kademlia extends GenericProtocol {
         int channelId = createChannel(TCPChannel.NAME, channelProps); //Create the channel with the given properties
 
         /*----------------------------- Register Message Handlers ----------------------------- */
-        registerMessageHandler(channelId, KademliaFindNodeRequest.REQUEST_ID, this::uponFindNode, this::uponMsgFail);
-        registerMessageHandler(channelId, KademliaFindNodeReply.REQUEST_ID, this::uponFindNodeReply, this::uponMsgFail);
+        registerMessageHandler(channelId, KademliaFindNodeRequest.MESSAGE_ID, this::uponFindNode, this::uponMsgFail);
+        registerMessageHandler(channelId, KademliaFindNodeReply.MESSAGE_ID, this::uponFindNodeReply, this::uponMsgFail);
 
         /*----------------------------- Register Request Handlers ----------------------------- */
         registerRequestHandler(LookupRequest.REQUEST_ID, this::uponLookupRequest);
@@ -97,8 +97,9 @@ public class Kademlia extends GenericProtocol {
     private void uponFindNode(KademliaFindNodeRequest msg, Host host, short destProto, int channelId) {
         List<Node> closest_nodes = find_node(msg.getIdToFind());
         insert_on_k_bucket(msg.getSender());
-        KademliaFindNodeReply reply = new KademliaFindNodeReply(closest_nodes, msg.getIdToFind(), my_node);
-        sendMessage(reply, msg.getSender().getHost());
+        KademliaFindNodeReply reply =
+                new KademliaFindNodeReply(msg.getUid(), closest_nodes, msg.getIdToFind(), my_node);
+        sendMessage(reply, msg.getSender().getHost());//Hugo - este getSender nao é simplesmente o host dor params?
     }
 
     private void uponFindNodeReply(KademliaFindNodeReply msg, Host host, short sourceProto, int channelId){
@@ -114,8 +115,9 @@ public class Kademlia extends GenericProtocol {
         }
 
         if(query.hasStabilised()){ //encontrei os knodes mais proximos
-            List<Host> hostList = NodeToHostList.convert(query.getKclosest());
-            LookupResponse reply = new LookupResponse(null, null, hostList);
+            //HUGO - not sure of idToFind here is correct
+            LookupResponse reply =
+                    new LookupResponse(msg.getUid(), idToFind, NodeToHostList.convert(query.getKclosest()));
             sendReply(reply, Storage.PROTOCOL_ID); 
             queriesByIdToFind.remove(idToFind);
         } else {
@@ -123,7 +125,7 @@ public class Kademlia extends GenericProtocol {
             for(Node n: kclosest){
                 if(!query.alreadyQueried(n) && !query.stillOngoing(n)){ //ainda não contactei com este no
                     query.sendFindNodeRequest(n);
-                    sendMessage(new KademliaFindNodeRequest(idToFind, my_node), n.getHost());
+                    sendMessage(new KademliaFindNodeRequest(msg.getUid(), idToFind, my_node), n.getHost());
                 }
             } 
         }
@@ -132,8 +134,7 @@ public class Kademlia extends GenericProtocol {
     /*--------------------------------- Requests ---------------------------------------- */
     private void uponLookupRequest(LookupRequest lookupRequest, short sourceProto) {
         //E se eu tiver um lookup do mesmo ficheiro quase simultaneamente
-        //TODO - Hugo - add uuid
-        node_lookup(lookupRequest.getObjID());
+        node_lookup(lookupRequest.getRequestUID(), lookupRequest.getObjID());
     }
 
     /*--------------------------------- TCP ---------------------------------------- */
@@ -143,7 +144,7 @@ public class Kademlia extends GenericProtocol {
         logger.debug("Out Connection to {} is up.", peer);
         //Tenho de apanhar o node a partir do host
         insert_on_k_bucket(new Node(peer, HashGenerator.generateHash(peer.toString()))); //Adiciona o contacto ao k_bucket 
-        node_lookup(my_node.getNodeId());
+        node_lookup(null,my_node.getNodeId());
     }
 
     private void uponOutConnectionDown(OutConnectionDown event, int channelId) {
@@ -211,14 +212,14 @@ public class Kademlia extends GenericProtocol {
         return closest_nodes;
     }
 
-    private void node_lookup(BigInteger id) {
+    private void node_lookup(UUID mid, BigInteger id) {
         List<Node> kclosest = find_node(id); //list containing the k closest nodes
 
         QueryState query = new QueryState(kclosest);
 
         for(int i = 0; i < alfa; i++){
             query.sendFindNodeRequest(kclosest.get(i));
-            sendMessage(new KademliaFindNodeRequest(id, my_node), kclosest.get(i).getHost());
+            sendMessage(new KademliaFindNodeRequest(mid, id, my_node), kclosest.get(i).getHost());
         }
 
         queriesByIdToFind.put(id, query);

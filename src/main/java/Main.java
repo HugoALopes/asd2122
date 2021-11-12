@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 
 import protocols.broadcast.ProbReliableBroadcast;
 import protocols.apps.AutomatedApplication;
+import protocols.dht.kademlia.Kademlia;
 import protocols.dht.kelips.Kelips;
 import protocols.storage.Storage;
 import pt.unl.fct.di.novasys.babel.core.Babel;
@@ -48,10 +49,10 @@ public class Main {
         // Application
         AutomatedApplication app = new AutomatedApplication(myself, props, Storage.PROTOCOL_ID);
         // Storage Protocol
-        Storage storage = new Storage(props,myself); /**You need to uncomment this line and define the protocol**/
+        Storage storage = new Storage(props,myself);
         // DHT Protocol
-        //DHTProtocol dht = new ...; /**You need to uncomment this line and define the protocol**/
         Kelips dht = new Kelips(myself, props);
+        //Kademlia dht = new Kademlia(myself, props);
 
         //Gossip
         ProbReliableBroadcast gossip = new ProbReliableBroadcast(props, myself);

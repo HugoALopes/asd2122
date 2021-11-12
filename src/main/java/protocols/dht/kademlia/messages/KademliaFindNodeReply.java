@@ -15,9 +15,9 @@ public class KademliaFindNodeReply extends ProtoMessage {
     private Node sender;
     private UUID uid; 
 
-    public KademliaFindNodeReply(List<Node> closest_nodes, BigInteger idToFind, Node sender) {
+    public KademliaFindNodeReply(UUID mid, List<Node> closest_nodes, BigInteger idToFind, Node sender) {
         super(MESSAGE_ID);
-        uid = UUID.randomUUID();
+        uid = mid;
         this.closest_nodes = closest_nodes;
         this.idToFind = idToFind;
         this.sender = sender;
