@@ -1,6 +1,5 @@
 package protocols.dht.replies;
 
-import protocols.storage.replies.StoreOKReply;
 import pt.unl.fct.di.novasys.babel.generic.ProtoReply;
 import pt.unl.fct.di.novasys.network.data.Host;
 
@@ -16,10 +15,11 @@ public class LookupResponse extends ProtoReply {
     private List<Host> host;
     private UUID mid;
 
-    public LookupResponse(UUID mid,BigInteger id, List<Host> host) {
+    public LookupResponse(UUID mid, BigInteger id, List<Host> host) {
         super(REPLY_ID);
         this.id=id;
         this.host=host;
+        this.mid = mid;
     }
 
     public BigInteger getObjId() {
