@@ -4,6 +4,8 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
+import pt.unl.fct.di.novasys.network.data.Host;
+
 public class QueryState {
 
     private int k;
@@ -53,6 +55,14 @@ public class QueryState {
             } 
         }
 
+    }
+
+    public List<Host> getKHosts(){
+        List<Host> kHosts = new ArrayList<>(k);
+        for(Node n: kclosest){
+            kHosts.add(n.getHost());
+        }
+        return kHosts;
     }
     
     private int calculate_dist(BigInteger node1, BigInteger node2){
