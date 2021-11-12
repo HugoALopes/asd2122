@@ -121,7 +121,7 @@ public class Kelips extends GenericProtocol {
         registerChannelEventHandler(channelId, InConnectionDown.EVENT_ID, this::uponInConnectionDown);
 
         /*--------------------- Notifications subscribed ----------------------------- */
-        subscribeNotification(DeliverNotification.NOTIFICATION_ID, this::uponDeliver);
+        //subscribeNotification(DeliverNotification.NOTIFICATION_ID, this::uponDeliver);
     }
 
     @Override

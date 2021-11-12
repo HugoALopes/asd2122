@@ -46,7 +46,7 @@ public class Main {
         logger.info("Hello, I am {}", myself);
 
         // Application
-        AutomatedApplication app = new AutomatedApplication(myself, props, (short) 0 /**change this parameter to map the id of the Storage Protocol -> 200**/);
+        AutomatedApplication app = new AutomatedApplication(myself, props, Storage.PROTOCOL_ID);
         // Storage Protocol
         Storage storage = new Storage(props,myself); /**You need to uncomment this line and define the protocol**/
         // DHT Protocol
