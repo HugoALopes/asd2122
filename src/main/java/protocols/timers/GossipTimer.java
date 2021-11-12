@@ -2,11 +2,10 @@ package protocols.timers;
 
 import pt.unl.fct.di.novasys.babel.generic.ProtoTimer;
 
-public class CacheDeleteTimer extends ProtoTimer {
+public class GossipTimer extends ProtoTimer {
+    public static final short TIMER_ID = 1002;
 
-    public static final short TIMER_ID = 1001;
-
-    public CacheDeleteTimer() {
+    public GossipTimer() {
         super(TIMER_ID);
     }
 
