@@ -102,13 +102,10 @@ public class Storage extends GenericProtocol {
         channelReady = true;
     }
 
-    /*--------------------------------- AUX ---------------------------------------- */
-    //private int nextContext(){ return (contextId==Integer.MAX_VALUE)?0:contextId++; }
-
     private void findHost(Operation op){
 
         UUID cont = UUID.randomUUID();
-        context.put(cont, op);//new Operation(true, id, request.getName()) );
+        context.put(cont, op);
         //find "saver" host
         LookupRequest getHost = new LookupRequest(op.getId(), cont, op.getOpType());
         sendRequest(getHost, DHT_PROTOCOL);
@@ -144,7 +141,6 @@ public class Storage extends GenericProtocol {
     }
 
     /*--------------------------------- Replies ---------------------------------------- */
-    //TODO - change for host[] -> change get(0) - context inside msg's
     @SuppressWarnings("UnnecessaryLocalVariable")
     private void uponLookupResponse(LookupResponse response, short sourceProto) {
         UUID responseUID = UUID.randomUUID(); //TODO - remove when uuid in response done
@@ -225,7 +221,7 @@ public class Storage extends GenericProtocol {
     /*--------------------------------- Timers ---------------------------------------- */
     private void uponCacheDeleteTimer(CacheDeleteTimer timer, long timerId) {
         LocalDateTime present = LocalDateTime.now();
-        ArrayList<BigInteger> aux = new ArrayList<BigInteger>();
+        ArrayList<BigInteger> aux = new ArrayList<>();
         cache.forEach((id,obj) -> {
             if (obj.getTime().isBefore(present)) {
             	aux.add(id);
@@ -234,7 +230,7 @@ public class Storage extends GenericProtocol {
         });
         
         for(BigInteger key: aux){
-       	cache.remove(key);
+       	    cache.remove(key);
         }
     }
 

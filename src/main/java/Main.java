@@ -51,10 +51,10 @@ public class Main {
         // Application
         AutomatedApplication app = new AutomatedApplication(myself, props, Storage.PROTOCOL_ID);
         // Storage Protocol
-        Storage storage = new Storage(props,myself); /**You need to uncomment this line and define the protocol**/
+        Storage storage = new Storage(props,myself);
         // DHT Protocol
-        //DHTProtocol dht = new ...; /**You need to uncomment this line and define the protocol**/
- 	    Kelips dht = new Kelips(myself, props);     
+        Kelips dht = new Kelips(myself, props);
+        //Kademlia dht = new Kademlia(myself, props);
 
         //Gossip
         ProbReliableBroadcast gossip = new ProbReliableBroadcast(props, myself);
