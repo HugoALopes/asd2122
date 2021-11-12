@@ -1,4 +1,4 @@
-package protocols.dht.kademlia.requests;
+package protocols.dht.kademlia.messages;
 
 import java.util.UUID;
 
@@ -7,13 +7,13 @@ import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 
 //TODO
 public class KademliaJoinRequest extends ProtoMessage{
-    public final static short REQUEST_ID = 1050; //TODO: mudar o valor da constante
+    public final static short MESSAGE_ID = 1130;
    
     private UUID uid;
     private Node senderNode;
 	
 	public KademliaJoinRequest(Node senderNode) {
-		super(REQUEST_ID);
+		super(MESSAGE_ID);
 		this.uid = UUID.randomUUID();
         this.senderNode = senderNode;
 	}

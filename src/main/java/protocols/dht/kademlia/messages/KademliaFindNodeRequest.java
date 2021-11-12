@@ -1,4 +1,4 @@
-package protocols.dht.kademlia.requests;
+package protocols.dht.kademlia.messages;
 
 import java.math.BigInteger;
 import java.util.UUID;
@@ -7,14 +7,14 @@ import protocols.dht.kademlia.Node;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 
 public class KademliaFindNodeRequest extends ProtoMessage{
-    public final static short REQUEST_ID = 1050; //TODO: mudar o valor da constante
+    public final static short MESSAGE_ID = 1131;
    
     private UUID uid;
     private BigInteger idToFind;
     private Node sender;
 	
 	public KademliaFindNodeRequest(BigInteger nodeToFind, Node sender) {
-		super(REQUEST_ID);
+		super(MESSAGE_ID);
 		this.uid = UUID.randomUUID();
         this.idToFind = nodeToFind;
         this.sender = sender;

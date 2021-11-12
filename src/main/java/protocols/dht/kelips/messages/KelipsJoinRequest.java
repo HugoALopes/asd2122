@@ -1,24 +1,22 @@
-package protocols.dht.messages;
+package protocols.dht.kelips.messages;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.UUID;
 
 import io.netty.buffer.ByteBuf;
-import protocols.storage.messages.SaveMessage;
 import pt.unl.fct.di.novasys.network.ISerializer;
 import pt.unl.fct.di.novasys.network.data.Host;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 
 public class KelipsJoinRequest extends ProtoMessage{
-    public final static short REQUEST_ID = 130;
+    public final static short MESSAGE_ID = 130;
 	
 	private UUID uid;
     private Host sender;
     private long time;
 	
 	public KelipsJoinRequest(Host sender) {
-		super(REQUEST_ID);
+		super(MESSAGE_ID);
 		this.uid = UUID.randomUUID();
         this.sender = sender;
         this.time = System.currentTimeMillis();

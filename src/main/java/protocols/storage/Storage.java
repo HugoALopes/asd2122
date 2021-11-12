@@ -30,7 +30,8 @@ public class Storage extends GenericProtocol {
     //Protocol information, to register in babel
     public static final String PROTOCOL_NAME = "Store";
     public static final short PROTOCOL_ID = 200;
-    public static final short DHT_PROTOCOL = 100;
+    public static final short DHT_PROTOCOL = 100;//kelipis
+    public static final short DHT_SECOND_PROTOCOL = 1100;//kademlia
     public static final short APP_PROTOCOL = 300;
 
     private static final int CACHE_TIMEOUT = 50000;

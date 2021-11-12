@@ -6,7 +6,7 @@ import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import protocols.dht.messages.InformationGossip;
+import protocols.dht.kelips.messages.InformationGossip;
 
 public class Serializer {
 

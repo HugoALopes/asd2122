@@ -31,8 +31,4 @@ public class Node {
         if(obj_aux.getHost().equals(obj)) return true;
         return super.equals(obj);
     }
-
-
-    
-
 }

@@ -1,4 +1,4 @@
-package protocols.dht.messages;
+package protocols.dht.kelips.messages;
 
 import pt.unl.fct.di.novasys.network.data.Host;
 

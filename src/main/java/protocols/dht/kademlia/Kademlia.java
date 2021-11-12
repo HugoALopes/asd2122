@@ -2,23 +2,15 @@ package protocols.dht.kademlia;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import protocols.dht.Kelips;
-import protocols.dht.kademlia.replies.KademliaFindNodeReply;
-import protocols.dht.kademlia.replies.LookupResponse;
-import protocols.dht.kademlia.requests.KademliaFindNodeRequest;
-import protocols.dht.kademlia.requests.LookupRequest;
+import protocols.dht.kademlia.messages.KademliaFindNodeReply;
+import protocols.dht.kademlia.messages.KademliaFindNodeRequest;
+import protocols.dht.replies.LookupResponse;
+import protocols.dht.requests.LookupRequest;
 import protocols.storage.Storage;
-
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-
+import java.util.*;
 import pt.unl.fct.di.novasys.babel.core.GenericProtocol;
 import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
@@ -26,12 +18,13 @@ import pt.unl.fct.di.novasys.channel.tcp.events.OutConnectionUp;
 import pt.unl.fct.di.novasys.network.data.Host;
 
 import utils.HashGenerator;
+import utils.NodeToHostList;
 
 public class Kademlia extends GenericProtocol {
-    private static final Logger logger = LogManager.getLogger(Kelips.class);
+    private static final Logger logger = LogManager.getLogger(Kademlia.class);
 
     // Protocol information, to register in babel
-    public final static short PROTOCOL_ID = 200;
+    public final static short PROTOCOL_ID = 1100;
     public final static String PROTOCOL_NAME = "kademlia";
 
     private Map<BigInteger, QueryState> queriesByIdToFind;
@@ -51,8 +44,8 @@ public class Kademlia extends GenericProtocol {
 
         /*----------------------------- Register Message Handlers ----------------------------- */
         //TODO: alterar o 0 para o valor do channelId
-        registerMessageHandler(0, KademliaFindNodeRequest.REQUEST_ID, this::uponFindNode, this::uponMsgFail);
-        registerMessageHandler(0, KademliaFindNodeReply.REQUEST_ID, this::uponFindNodeReply, this::uponMsgFail);
+        registerMessageHandler(0, KademliaFindNodeRequest.MESSAGE_ID, this::uponFindNode, this::uponMsgFail);
+        registerMessageHandler(0, KademliaFindNodeReply.MESSAGE_ID, this::uponFindNodeReply, this::uponMsgFail);
 
         /*----------------------------- Register Request Handlers ----------------------------- */
         registerRequestHandler(LookupRequest.REQUEST_ID, this::uponLookupRequest);
@@ -106,7 +99,8 @@ public class Kademlia extends GenericProtocol {
         }
 
         if(query.hasStabilised()){ //encontrei os knodes mais proximos
-            LookupResponse reply = new LookupResponse(query.getKclosest());
+            List<Host> hostList = NodeToHostList.convert(query.getKclosest());
+            LookupResponse reply = new LookupResponse(null, null, hostList);
             sendReply(reply, Storage.PROTOCOL_ID); 
             queriesByIdToFind.remove(idToFind);
         } else {
@@ -123,6 +117,7 @@ public class Kademlia extends GenericProtocol {
     /*--------------------------------- Requests ---------------------------------------- */
     private void uponLookupRequest(LookupRequest lookupRequest, short sourceProto) {
         //E se eu tiver um lookup do mesmo ficheiro quase simultaneamente
+        //TODO - Hugo - add uuid
         node_lookup(lookupRequest.getObjID());
     }
 
@@ -156,7 +151,7 @@ public class Kademlia extends GenericProtocol {
     private List<Node> find_node(BigInteger node_id){
         int distance = calculate_dist(node_id, my_node.getNodeId());
         int i = (int) (Math.log(distance) / Math.log(2));
-        List<Node> closest_nodes = new ArrayList<Node>(k); //Definir um comparador para que os nos fiquem organizados pela distancia
+        List<Node> closest_nodes = new ArrayList(k); //Definir um comparador para que os nos fiquem organizados pela distancia
 
         for (int j = i; j < k_buckets_list.size() && closest_nodes.size() <= alfa; j++) {
             List<Node> k_bucket = k_buckets_list.get(j);

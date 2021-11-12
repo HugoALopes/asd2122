@@ -1,4 +1,4 @@
-package protocols.Broadcast.messages;
+package protocols.broadcast.messages;
 
 import java.io.IOException;
 import java.util.UUID;
