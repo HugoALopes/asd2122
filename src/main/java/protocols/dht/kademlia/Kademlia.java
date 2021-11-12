@@ -1,5 +1,6 @@
 package protocols.dht.kademlia;
 
+import membership.common.ChannelCreated;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import protocols.dht.kademlia.messages.KademliaFindNodeReply;
@@ -35,8 +36,7 @@ public class Kademlia extends GenericProtocol {
 
     private Node my_node;
     private List<List<Node>> k_buckets_list;
-    private int alfa;
-    private int k;
+    private int alfa,k,channelId;
 
     public Kademlia(Host self, Properties props) throws HandlerRegistrationException, IOException{
         super(PROTOCOL_NAME, PROTOCOL_ID);
@@ -56,7 +56,7 @@ public class Kademlia extends GenericProtocol {
         channelProps.setProperty(TCPChannel.HEARTBEAT_INTERVAL_KEY, "1000"); //Heartbeats interval for established connections
         channelProps.setProperty(TCPChannel.HEARTBEAT_TOLERANCE_KEY, "3000"); //Time passed without heartbeats until closing a connection
         channelProps.setProperty(TCPChannel.CONNECT_TIMEOUT_KEY, "1000"); //TCP connect timeout
-        int channelId = createChannel(TCPChannel.NAME, channelProps); //Create the channel with the given properties
+        channelId = createChannel(TCPChannel.NAME, channelProps); //Create the channel with the given properties
 
         /*----------------------------- Register Message Handlers ----------------------------- */
         registerMessageHandler(channelId, KademliaFindNodeRequest.MESSAGE_ID, this::uponFindNode, this::uponMsgFail);
@@ -74,6 +74,7 @@ public class Kademlia extends GenericProtocol {
 
     @Override
     public void init(Properties properties) throws HandlerRegistrationException, IOException {
+        triggerNotification(new ChannelCreated(channelId));
         if (properties.contains("contact")) {
             try {
                 String contact = properties.getProperty("contact");
@@ -134,6 +135,7 @@ public class Kademlia extends GenericProtocol {
     /*--------------------------------- Requests ---------------------------------------- */
     private void uponLookupRequest(LookupRequest lookupRequest, short sourceProto) {
         //E se eu tiver um lookup do mesmo ficheiro quase simultaneamente
+        logger.info("entrei em DHT");
         node_lookup(lookupRequest.getRequestUID(), lookupRequest.getObjID());
     }
 

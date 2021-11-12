@@ -54,7 +54,6 @@ protocols/storage/messages/SuccessSaveMessage$1.class
 protocols/broadcast/ProbReliableBroadcast.class
 channel/notifications/ChannelCreated.class
 utils/InterfaceToIp.class
-protocols/dht/kademlia/replies/LookupResponse.class
 protocols/dht/kelips/messages/GetDiffAgFileMessage.class
 protocols/storage/messages/SuccessSaveMessage.class
 protocols/dht/kademlia/messages/KademliaFindNodeReply.class

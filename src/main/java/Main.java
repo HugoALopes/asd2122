@@ -54,8 +54,8 @@ public class Main {
         // Storage Protocol
         Storage storage = new Storage(props,myself);
         // DHT Protocol
-        Kelips dht = new Kelips(myself, props);
-        //Kademlia dht = new Kademlia(myself, props);
+        //Kelips dht = new Kelips(myself, props);
+        Kademlia dht = new Kademlia(myself, props);
 
         //Gossip
         ProbReliableBroadcast gossip = new ProbReliableBroadcast(props, myself);
