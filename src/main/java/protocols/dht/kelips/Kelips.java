@@ -138,7 +138,8 @@ public class Kelips extends GenericProtocol {
                 System.exit(-1);
             }
         }
-    
+
+        agView.add(me);
         //setupPeriodicTimer(new GossipTimer(), 5000, 20000);
     }
 

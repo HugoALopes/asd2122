@@ -7,6 +7,7 @@ import org.apache.logging.log4j.Logger;
 
 import protocols.apps.AutomatedApplication;
 import protocols.broadcast.ProbReliableBroadcast;
+import protocols.dht.kademlia.Kademlia;
 import protocols.dht.kelips.*;
 import protocols.storage.Storage;
 import pt.unl.fct.di.novasys.babel.core.Babel;
