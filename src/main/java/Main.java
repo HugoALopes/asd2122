@@ -4,10 +4,10 @@ import java.util.Properties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import protocols.broadcast.ProbReliableBroadcast;
+
 import protocols.apps.AutomatedApplication;
-import protocols.dht.kademlia.Kademlia;
-import protocols.dht.kelips.Kelips;
+import protocols.broadcast.ProbReliableBroadcast;
+import protocols.dht.kelips.*;
 import protocols.storage.Storage;
 import pt.unl.fct.di.novasys.babel.core.Babel;
 import pt.unl.fct.di.novasys.network.data.Host;
@@ -34,6 +34,7 @@ public class Main {
 
         //Loads properties from the configuration file, and merges them with properties passed in the launch arguments
         Properties props = Babel.loadConfig(args, DEFAULT_CONF);
+        props.setProperty("prepare_time", "5");
 
         //If you pass an interface name in the properties (either file or arguments), this wil get the IP of that interface
         //and create a property "address=ip" to be used later by the channels.
@@ -45,14 +46,15 @@ public class Main {
                 Integer.parseInt(props.getProperty("port")));
 
         logger.info("Hello, I am {}", myself);
-
+        
+ 
         // Application
         AutomatedApplication app = new AutomatedApplication(myself, props, Storage.PROTOCOL_ID);
         // Storage Protocol
-        Storage storage = new Storage(props,myself);
+        Storage storage = new Storage(props,myself); /**You need to uncomment this line and define the protocol**/
         // DHT Protocol
-        Kelips dht = new Kelips(myself, props);
-        //Kademlia dht = new Kademlia(myself, props);
+        //DHTProtocol dht = new ...; /**You need to uncomment this line and define the protocol**/
+ 	    Kelips dht = new Kelips(myself, props);     
 
         //Gossip
         ProbReliableBroadcast gossip = new ProbReliableBroadcast(props, myself);
@@ -65,12 +67,14 @@ public class Main {
         babel.registerProtocol(gossip);
 
         //Init the protocols. This should be done after creating all protocols, since there can be inter-protocol
-        //communications in this step.
+        //communications in this step
         app.init(props);
         /** You need to uncomment the next two lines when you have protocols to fill those gaps **/
         storage.init(props);
-        dht.init(props);
+       
         gossip.init(props);
+
+	dht.init(props);
 
         //Start babel and protocol threads
         babel.start();

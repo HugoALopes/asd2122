@@ -8,6 +8,7 @@ import membership.common.NeighbourDown;
 import protocols.broadcast.*;
 import protocols.broadcast.common.BroadcastRequest;
 import protocols.broadcast.common.DeliverNotification;
+import protocols.dht.*;
 import protocols.dht.kelips.messages.*;
 import protocols.dht.replies.LookupResponse;
 import protocols.dht.requests.LookupRequest;
@@ -76,8 +77,6 @@ public class Kelips extends GenericProtocol {
         this.agNum = Integer.parseInt(props.getProperty("agNum"));
         myAG = generateHash(me.toString()).mod(BigInteger.valueOf(agNum)).intValueExact();
 
-        channelId = 0;
-
         pending = new HashMap<>();
 
         filetuples = new HashMap<>();
@@ -140,8 +139,8 @@ public class Kelips extends GenericProtocol {
                 System.exit(-1);
             }
         }
-
-        setupPeriodicTimer(new GossipTimer(), 5000, 20000);
+    
+        //setupPeriodicTimer(new GossipTimer(), 5000, 20000);
     }
 
     /*--------------------- Notifications subscribed ----------------------------- */
