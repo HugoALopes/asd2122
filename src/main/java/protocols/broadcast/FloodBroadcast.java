@@ -1,46 +1,44 @@
-package protocols.Broadcast;
+package protocols.broadcast;
 
 import membership.common.ChannelCreated;
 import membership.common.NeighbourDown;
 import membership.common.NeighbourUp;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import protocols.Broadcast.common.BroadcastRequest;
-import protocols.Broadcast.common.DeliverNotification;
-import protocols.Broadcast.messages.FloodMessage;
+import protocols.broadcast.common.BroadcastRequest;
+import protocols.broadcast.common.DeliverNotification;
+import protocols.broadcast.messages.FloodMessage;
 import pt.unl.fct.di.novasys.babel.core.GenericProtocol;
 import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 import pt.unl.fct.di.novasys.network.data.Host;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Properties;
+import java.util.Set;
+import java.util.UUID;
 
-public class ProbReliableBroadcast extends GenericProtocol {
+public class FloodBroadcast extends GenericProtocol {
     private static final Logger logger = LogManager.getLogger(FloodBroadcast.class);
 
     //Protocol information, to register in babel
-    public static final String PROTOCOL_NAME = "ProbReliableBroadcast";
+    public static final String PROTOCOL_NAME = "Flood";
     public static final short PROTOCOL_ID = 400;
 
     private final Host myself; //My own address/port
     private final Set<Host> neighbours; //My known neighbours (a.k.a peers the membership protocol told me about)
-    private final List<Host> neighboursAUXList;
     private final Set<UUID> received; //Set of received messages (since we do not want to deliver the same msg twice)
-    private int fanout;
 
     //We can only start sending messages after the membership protocol informed us that the channel is ready
     private boolean channelReady;
 
-    public ProbReliableBroadcast(Properties properties, Host myself) throws IOException, HandlerRegistrationException {
+    public FloodBroadcast(Properties properties, Host myself) throws IOException, HandlerRegistrationException {
         super(PROTOCOL_NAME, PROTOCOL_ID);
         this.myself = myself;
         neighbours = new HashSet<>();
         received = new HashSet<>();
         channelReady = false;
-        fanout = 0;
-        neighboursAUXList = new ArrayList<>();
-
 
         /*--------------------- Register Request Handlers ----------------------------- */
         registerRequestHandler(BroadcastRequest.REQUEST_ID, this::uponBroadcastRequest);
@@ -94,16 +92,11 @@ public class ProbReliableBroadcast extends GenericProtocol {
             //Deliver the message to the application (even if it came from it)
             triggerNotification(new DeliverNotification(msg.getMid(), msg.getSender(), msg.getContent()));
 
-            fanout=(int)Math.log((double)neighbours.size());
-            Random rnd = new Random();
-            Set <Integer> index = new HashSet<>();
-            while (index.size()<fanout)
-                index.add(rnd.nextInt());
-            index.forEach(i -> {
-                Host h = neighboursAUXList.get(i);
-                if (!h.equals(from)) {
-                    logger.trace("Sent {} to {}", msg, h);
-                    sendMessage(msg, h);
+            //Simply send the message to every known neighbour (who will then do the same)
+            neighbours.forEach(host -> {
+                if (!host.equals(from)) {
+                    logger.trace("Sent {} to {}", msg, host);
+                    sendMessage(msg, host);
                 }
             });
         }
@@ -120,17 +113,15 @@ public class ProbReliableBroadcast extends GenericProtocol {
     //When the membership protocol notifies of a new neighbour (or leaving one) simply update my list of neighbours.
     private void uponNeighbourUp(NeighbourUp notification, short sourceProto) {
         for(Host h: notification.getNeighbours()) {
-            if(neighbours.add(h))
-                neighboursAUXList.add(h);
-            logger.info("New neighbour: " + h);
+        	neighbours.add(h);
+        	logger.info("New neighbour: " + h);
         }
     }
 
     private void uponNeighbourDown(NeighbourDown notification, short sourceProto) {
         for(Host h: notification.getNeighbours()) {
-            if (neighbours.remove(h))
-                neighboursAUXList.remove(h);
-            logger.info("Neighbour down: " + h);
-        }
+	    	neighbours.remove(h);
+	        logger.info("Neighbour down: " + h);
+	    }
     }
 }

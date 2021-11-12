@@ -1,20 +1,19 @@
-package protocols.Broadcast.common;
+package protocols.broadcast.common;
 
 import java.util.UUID;
 
-import pt.unl.fct.di.novasys.babel.generic.ProtoRequest;
+import pt.unl.fct.di.novasys.babel.generic.ProtoNotification;
 import pt.unl.fct.di.novasys.network.data.Host;
 
-public class BroadcastRequest extends ProtoRequest {
-
-    public static final short REQUEST_ID = 410;
+public class DeliverNotification extends ProtoNotification {
+    public static final short NOTIFICATION_ID = 440;
 
     private final Host sender;
     private final UUID msgId;
     private final byte[] msg;
 
-    public BroadcastRequest(UUID msgId, Host sender, byte[] msg) {
-        super(REQUEST_ID);
+    public DeliverNotification(UUID msgId, Host sender, byte[] msg) {
+        super(NOTIFICATION_ID);
         this.msgId = msgId;
         this.sender = sender;
         this.msg = msg;
@@ -31,5 +30,4 @@ public class BroadcastRequest extends ProtoRequest {
     public byte[] getMsg() {
         return msg;
     }
-
 }

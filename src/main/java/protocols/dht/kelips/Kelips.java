@@ -1,14 +1,14 @@
-package protocols.dht;
+package protocols.dht.kelips;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import membership.common.ChannelCreated;
 import membership.common.NeighbourDown;
-import protocols.Broadcast.*;
-import protocols.Broadcast.common.BroadcastRequest;
-import protocols.Broadcast.common.DeliverNotification;
-import protocols.dht.messages.*;
+import protocols.broadcast.*;
+import protocols.broadcast.common.BroadcastRequest;
+import protocols.broadcast.common.DeliverNotification;
+import protocols.dht.kelips.messages.*;
 import protocols.dht.replies.LookupResponse;
 import protocols.dht.requests.LookupRequest;
 import protocols.storage.Storage;
@@ -99,12 +99,12 @@ public class Kelips extends GenericProtocol {
         channelId = createChannel(TCPChannel.NAME, channelProps); //Create the channel with the given properties
 
         /*--------------------- Register Message Handlers ----------------------------- */
-        registerMessageHandler(channelId, KelipsJoinRequest.REQUEST_ID, this::uponJoinMessage, this::uponMsgFail);
-        registerMessageHandler(channelId, KelipsJoinReply.REQUEST_ID, this::uponJoinReplyMessage, this::uponMsgFail);
-        registerMessageHandler(channelId, KelipsInformRequest.REQUEST_ID, this::uponInformMessage, this::uponMsgFail);
-        registerMessageHandler(channelId, GetFileMessage.REQUEST_ID, this::uponGetFileMessage, this::uponMsgFail);
-        registerMessageHandler(channelId, GetDiffAgFileMessage.REQUEST_ID, this::uponGetDiffAgFileMessage, this::uponMsgFail);
-        registerMessageHandler(channelId, GetFileReply.REQUEST_ID, this::uponLookupReplyMessage, this::uponMsgFail);
+        registerMessageHandler(channelId, KelipsJoinRequest.MESSAGE_ID, this::uponJoinMessage, this::uponMsgFail);
+        registerMessageHandler(channelId, KelipsJoinReply.MESSAGE_ID, this::uponJoinReplyMessage, this::uponMsgFail);
+        registerMessageHandler(channelId, KelipsInformRequest.MESSAGE_ID, this::uponInformMessage, this::uponMsgFail);
+        registerMessageHandler(channelId, GetFileMessage.MESSAGE_ID, this::uponGetFileMessage, this::uponMsgFail);
+        registerMessageHandler(channelId, GetDiffAgFileMessage.MESSAGE_ID, this::uponGetDiffAgFileMessage, this::uponMsgFail);
+        registerMessageHandler(channelId, GetFileReply.MESSAGE_ID, this::uponLookupReplyMessage, this::uponMsgFail);
 
 
         /*--------------------- Register Request Handlers ----------------------------- */

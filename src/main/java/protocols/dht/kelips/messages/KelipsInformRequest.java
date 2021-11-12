@@ -1,23 +1,20 @@
-package protocols.dht.messages;
+package protocols.dht.kelips.messages;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.UUID;
 
 import io.netty.buffer.ByteBuf;
-import protocols.storage.messages.SaveMessage;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 import pt.unl.fct.di.novasys.network.ISerializer;
-import pt.unl.fct.di.novasys.network.data.Host;
 
 public class KelipsInformRequest extends ProtoMessage{
-    public final static short REQUEST_ID = 132;
+    public final static short MESSAGE_ID = 132;
 	
 	private UUID uid;
 	
 	
 	public KelipsInformRequest() {
-		super(REQUEST_ID);
+		super(MESSAGE_ID);
 		this.uid = UUID.randomUUID();
 	}
 

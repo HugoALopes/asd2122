@@ -4,9 +4,9 @@ import java.util.Properties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import protocols.Broadcast.ProbReliableBroadcast;
+import protocols.broadcast.ProbReliableBroadcast;
 import protocols.apps.AutomatedApplication;
-import protocols.dht.Kelips;
+import protocols.dht.kelips.Kelips;
 import protocols.storage.Storage;
 import pt.unl.fct.di.novasys.babel.core.Babel;
 import pt.unl.fct.di.novasys.network.data.Host;

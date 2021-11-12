@@ -1,4 +1,4 @@
-package protocols.dht.messages;
+package protocols.dht.kelips.messages;
 
 import java.io.*;
 import io.netty.buffer.ByteBuf;
@@ -11,7 +11,7 @@ import java.math.BigInteger;
 import java.util.*;
 
 public class KelipsJoinReply extends ProtoMessage{
-    public final static short REQUEST_ID = 131;
+    public final static short MESSAGE_ID = 131;
 
     private UUID uid;
     private Map<Integer, Set<Host>> contacts;
@@ -21,7 +21,7 @@ public class KelipsJoinReply extends ProtoMessage{
 
     public KelipsJoinReply(Host sender, Map<Integer, Set<Host>> contacts, Map<BigInteger, Host> fileTuples,
         Set<Host> agView) {
-        super(REQUEST_ID);
+        super(MESSAGE_ID);
         this.contacts = contacts;
         this.sender = sender;
         this.uid = UUID.randomUUID();

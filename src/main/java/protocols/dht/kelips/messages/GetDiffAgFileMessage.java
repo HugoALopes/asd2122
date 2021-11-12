@@ -1,4 +1,4 @@
-package protocols.dht.messages;
+package protocols.dht.kelips.messages;
 
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 
@@ -6,7 +6,7 @@ import java.math.BigInteger;
 import java.util.UUID;
 
 public class GetDiffAgFileMessage extends ProtoMessage{
-    public final static short REQUEST_ID = 135;
+    public final static short MESSAGE_ID = 135;
 
 	private UUID uid;
     private BigInteger objID;
@@ -14,7 +14,7 @@ public class GetDiffAgFileMessage extends ProtoMessage{
 
 
     public GetDiffAgFileMessage(UUID mid, BigInteger objID, boolean opType) {
-        super(REQUEST_ID);
+        super(MESSAGE_ID);
         this.uid = mid;
         this.objID = objID;
         this.opType=opType;
