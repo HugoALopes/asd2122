@@ -40,12 +40,9 @@ public class Storage extends GenericProtocol {
     private final Map<BigInteger, CacheContent> cache;
     private final Map<BigInteger, byte[]> store;
     private final Map<UUID, Operation> context;
-    
+
     private Set<Host> connections;
 
-    private final Set<Host> outgoingcons;
-
-    // private int contextId;
 
     private boolean channelReady;
 
@@ -154,30 +151,32 @@ public class Storage extends GenericProtocol {
         List<Host> hostList = response.getHost();
         context.get(contID).setHostList(hostList);
 
-	for(Host h: hostList){
-		if(!connections.contains(h)){
-			openConnection(h);
-			connections.add(h);
-		
-		}
-	}
-	
+        for (Host h : hostList) {
+            if (!connections.contains(h)) {
+                openConnection(h);
+                connections.add(h);
+            }
+        }
+
         if (context.get(contID).getOpType()) { //True if insert/Put; False if retrieve/Get
             byte[] content = cache.get(response.getObjId()).getContent();
 
-                if (h.equals(me)) {
+            hostList.forEach(host -> {
+                if (host.equals(me)) {
                     store.put(response.getObjId(), content);
                     sendReply(new StoreOKReply(context.get(contID).getName(), contID), APP_PROTOCOL);
                 }
+            });
 
-                SaveMessage requestMsg = new SaveMessage(contID, response.getObjId(), h, content);
-                sendMessage(requestMsg, h);
+            hostList.forEach(host -> {
+                SaveMessage requestMsg = new SaveMessage(contID, response.getObjId(), host, content);
+                sendMessage(requestMsg, host);
+            });
 
-            } else {
-                Host host = context.get(contID).getHost();
-                GetMessage getMsg = new GetMessage(contID, context.get(contID).getId());
-                sendMessage(getMsg, host);
-            }
+        } else {
+            Host host = context.get(contID).getHost();
+            GetMessage getMsg = new GetMessage(contID, context.get(contID).getId());
+            sendMessage(getMsg, host);
         }
     }
 

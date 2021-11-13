@@ -10,12 +10,14 @@
     <list default="true" id="a0bbf4ba-7463-49e9-98fd-bb596853f106" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/babel_config.properties" beforeDir="false" afterPath="$PROJECT_DIR$/babel_config.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/deploy/start-processes.sh" beforeDir="false" afterPath="$PROJECT_DIR$/deploy/start-processes.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/Main.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/protocols/dht/kademlia/Kademlia.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/dht/kademlia/Kademlia.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/protocols/dht/kelips/Kelips.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/dht/kelips/Kelips.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/protocols/dht/kelips/messages/GetDiffAgFileMessage.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/dht/kelips/messages/GetDiffAgFileMessage.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/protocols/dht/kelips/messages/GetFileMessage.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/dht/kelips/messages/GetFileMessage.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/protocols/dht/kelips/messages/GetFileReply.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/dht/kelips/messages/GetFileReply.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/protocols/storage/Storage.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/storage/Storage.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/protocols/storage/messages/GetMessage.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/storage/messages/GetMessage.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -103,7 +105,8 @@
       <workItem from="1636800092454" duration="326000" />
       <workItem from="1636800634890" duration="865000" />
       <workItem from="1636801627239" duration="417000" />
-      <workItem from="1636802327577" duration="827000" />
+      <workItem from="1636802327577" duration="3028000" />
+      <workItem from="1636805596140" duration="3140000" />
     </task>
     <servers />
   </component>

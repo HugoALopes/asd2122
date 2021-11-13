@@ -18,7 +18,7 @@ public class GetMessage extends ProtoMessage {
 
     public GetMessage(UUID uid, BigInteger id) {
         super(MSG_ID);
-        this.mid=uid;
+        this.mid = uid;
         this.id = id;
     }
 
@@ -49,7 +49,7 @@ public class GetMessage extends ProtoMessage {
             UUID mid = new UUID(firstLong, secondLong);
             int size = in.readInt();
             byte[] objIdArr = new byte[size];
-            if (size > 0) //TODO - devia ser while?
+            if (size > 0)
                 in.readBytes(objIdArr);
             BigInteger objId = new BigInteger(objIdArr);
 

@@ -136,12 +136,12 @@ public class Kelips extends GenericProtocol {
     public void init(Properties properties) {
         triggerNotification(new ChannelCreated(channelId));
         if (properties.containsKey("contact")) {
-            logger.info("Contains contact");
             try {
                 String contact = properties.getProperty("contact");
+                logger.info("{} is contact", contact);
                 String[] hostElems = contact.split(":");
                 Host contactHost = new Host(InetAddress.getByName(hostElems[0]), Short.parseShort(hostElems[1]));
-                if(contactHost.equals(me)){
+                if (contactHost.equals(me)) {
                     agView.add(me);
                     return;
                 }
@@ -151,8 +151,8 @@ public class Kelips extends GenericProtocol {
                 System.exit(-1);
             }
         }
-        logger.info("Nao Contains contact");
-        //agView.add(me);
+        logger.info("Do no Contains contact");
+        agView.add(me);
         //setupPeriodicTimer(new GossipTimer(), 5000, 20000);
     }
 
@@ -167,24 +167,23 @@ public class Kelips extends GenericProtocol {
         Map<Integer, Set<Host>> contactsIG = ig.getContacts();
         Set<Host> view = ig.getAgView();
 
-        if(fromID == this.myAG){
-            for(Host h: view){
-                if(!this.agView.contains(h))
+        if (fromID == this.myAG) {
+            for (Host h : view) {
+                if (!this.agView.contains(h))
                     view.add(h);
             }
-        }else{
+        } else {
             contactsIG.put(fromID, view);
         }
-        
-        for(Integer key: contactsIG.keySet()){
-            if(!contacts.containsKey(key) && key != this.myAG){
+
+        for (Integer key : contactsIG.keySet()) {
+            if (!contacts.containsKey(key) && key != this.myAG) {
                 contacts.put(key, contactsIG.get(key));
-            }
-            else if(contacts.containsKey(key) && key != this.myAG){
+            } else if (contacts.containsKey(key) && key != this.myAG) {
                 Set<Host> aux = contacts.get(key);
                 Set<Host> aux2 = contactsIG.get(key);
                 Iterator<Host> it = aux2.iterator();
-                while(it.hasNext() && aux.size() < this.numContacts){
+                while (it.hasNext() && aux.size() < this.numContacts) {
                     Host igH = it.next();
                     aux.add(igH);
                     aux2.remove(igH);
@@ -193,7 +192,7 @@ public class Kelips extends GenericProtocol {
                 contactsIG.put(key, aux2);
             }
         }
-        
+
         for (BigInteger key : ig.getFileTuples().keySet()) {
             if (!filetuples.containsKey(key))
                 filetuples.put(key, ig.getFileTuples().get(key));
@@ -316,7 +315,7 @@ public class Kelips extends GenericProtocol {
             Set<Host> aux = contacts.get(fromID);
             if (aux == null) {
                 aux = new HashSet<Host>();
-            } 
+            }
             aux.add(from);
             contacts.put(fromID, aux);
         }
@@ -350,7 +349,9 @@ public class Kelips extends GenericProtocol {
 
                 ongoinglookUp.putIfAbsent(msg.getUid(), agView);
 
-                for (Host h : agView) { sendMessage(msg, h); }
+                for (Host h : agView) {
+                    sendMessage(msg, h);
+                }
 
             } else {
                 GetFileReply msgR = new GetFileReply(receivedMsg.getObjID(), receivedMsg.getUid(), host);
@@ -438,7 +439,7 @@ public class Kelips extends GenericProtocol {
         } else { // file does not belong my AG
 
             //opType - True if insert/Put; False if retrieve/Get
-            if (lookupRequest.getOpType()) { /*no need to do nothing*/ }
+            //if (lookupRequest.getOpType()) { /*no need to do nothing*/ }
 
             Set<Host> contact = contacts.get(fAG);
             if (contact != null) {
@@ -540,7 +541,8 @@ public class Kelips extends GenericProtocol {
             }
         } else {
             Set<Host> aux = contacts.get(fromID);
-            aux.removeIf(n -> n.equals(peer));
+            if (!aux.isEmpty())
+                aux.removeIf(n -> n.equals(peer));
 
             Set<Host> cH = candidates.get(fromID);
             if (cH != null) {
@@ -553,18 +555,19 @@ public class Kelips extends GenericProtocol {
         }
 
         Set<Host> aux = candidates.get(fromID);
-        if(aux.isEmpty()){
-        if(peer!=null && aux.contains(peer))
-            aux.removeIf(h -> h.equals(peer));
+        if (aux!=null) {//if (!aux.isEmpty()) {
+            if (peer != null && aux.contains(peer))
+                aux.removeIf(h -> h.equals(peer));
 
-        candidates.put(fromID, aux);}
+            candidates.put(fromID, aux);
+        }
         pending.remove(peer);
 
         List<BigInteger> temp = new ArrayList<>();
         filetuples.forEach((i, h) -> {
             if (h.equals(peer)) temp.add(i);
-        });
-        temp.forEach(i -> {filetuples.remove(i);});
+            });
+        temp.forEach(i -> filetuples.remove(i));
 
         closeConnection(peer);
     }

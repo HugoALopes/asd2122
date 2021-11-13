@@ -82,6 +82,7 @@ public class Kademlia extends GenericProtocol {
         if (properties.containsKey("contact")) {
             logger.info("Contains contact");
             try {
+                String contact = properties.getProperty("contact");
                 String[] hostElems = contact.split(":");
                 Host contactHost = new Host(InetAddress.getByName(hostElems[0]), Short.parseShort(hostElems[1]));
                 openConnection(contactHost);
