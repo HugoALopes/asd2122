@@ -40,6 +40,8 @@ public class Storage extends GenericProtocol {
     private final Map<BigInteger, CacheContent> cache;
     private final Map<BigInteger, byte[]> store;
     private final Map<UUID, Operation> context;
+    
+    private Set<Host> connections;
 
     //private int contextId;
 
@@ -51,6 +53,7 @@ public class Storage extends GenericProtocol {
         cache = new HashMap<>();
         store = new HashMap<>();
         context = new HashMap<>();
+        connections = new HashSet<>();
         //contextId=0;
 
 
@@ -143,11 +146,19 @@ public class Storage extends GenericProtocol {
     /*--------------------------------- Replies ---------------------------------------- */
     @SuppressWarnings("UnnecessaryLocalVariable")
     private void uponLookupResponse(LookupResponse response, short sourceProto) {
-        UUID responseUID = UUID.randomUUID(); //TODO - remove when uuid in response done
+        UUID responseUID = response.getMid(); //TODO - remove when uuid in response done
         UUID contID = responseUID;
         List<Host> hostList = response.getHost();
         context.get(contID).setHostList(hostList);
 
+	for(Host h: hostList){
+		if(!connections.contains(h)){
+			openConnection(h);
+			connections.add(h);
+		
+		}
+	}
+	
         if (context.get(contID).getOpType()) { //True if insert/Put; False if retrieve/Get
             byte[] content = cache.get(response.getObjId()).getContent();
 
