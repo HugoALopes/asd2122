@@ -26,10 +26,10 @@ public class Storage extends GenericProtocol {
 
     private static final Logger logger = LogManager.getLogger(Storage.class);
 
-    //Protocol information, to register in babel
+    // Protocol information, to register in babel
     public static final String PROTOCOL_NAME = "Store";
     public static final short PROTOCOL_ID = 200;
-    public static final short DHT_PROTOCOL = 1100;
+    public static final short DHT_PROTOCOL = 100;
     public static final short APP_PROTOCOL = 300;
 
     private static final int CACHE_TIMEOUT = 50000;
@@ -41,7 +41,9 @@ public class Storage extends GenericProtocol {
     private final Map<BigInteger, byte[]> store;
     private final Map<UUID, Operation> context;
 
-    //private int contextId;
+    private final Set<Host> outgoingcons;
+
+    // private int contextId;
 
     private boolean channelReady;
 
@@ -51,8 +53,8 @@ public class Storage extends GenericProtocol {
         cache = new HashMap<>();
         store = new HashMap<>();
         context = new HashMap<>();
-        //contextId=0;
-
+        outgoingcons = new HashSet<>();
+        // contextId=0;
 
         /*--------------------- Register Request Handlers ----------------------------- */
         registerRequestHandler(StoreRequest.REQUEST_ID, this::uponStoreRequest);
@@ -62,8 +64,9 @@ public class Storage extends GenericProtocol {
         registerReplyHandler(LookupResponse.REPLY_ID, this::uponLookupResponse);
 
         /*--------------------- Register Notification Handlers ----------------------------- */
-        //subscribeNotification(NeighbourUp.NOTIFICATION_ID, this::uponNeighbourUp);
-        //subscribeNotification(NeighbourDown.NOTIFICATION_ID, this::uponNeighbourDown);
+        // subscribeNotification(NeighbourUp.NOTIFICATION_ID, this::uponNeighbourUp);
+        // subscribeNotification(NeighbourDown.NOTIFICATION_ID,
+        // this::uponNeighbourDown);
         subscribeNotification(ChannelCreated.NOTIFICATION_ID, this::uponChannelCreated);
 
         /*--------------------- Register Timer Handlers ----------------------------- */
@@ -73,11 +76,12 @@ public class Storage extends GenericProtocol {
     @Override
     public void init(Properties props) {
 
-        //setup timer to delete cache
+        // setup timer to delete cache
         setupPeriodicTimer(new CacheDeleteTimer(), CACHE_TIMEOUT, CACHE_TIMEOUT);
     }
 
-    //Upon receiving the channelId from the membership, register our own callbacks and serializers
+    // Upon receiving the channelId from the membership, register our own callbacks
+    // and serializers
     private void uponChannelCreated(ChannelCreated notification, short sourceProto) {
         int cId = notification.getChannelId();
         // Allows this protocol to receive events from this channel.
@@ -87,7 +91,8 @@ public class Storage extends GenericProtocol {
         registerMessageSerializer(cId, SuccessSaveMessage.MSG_ID, SuccessSaveMessage.serializer);
         registerMessageSerializer(cId, GetMessage.MSG_ID, GetMessage.serializer);
         registerMessageSerializer(cId, ThereYouGoMessage.MSG_ID, ThereYouGoMessage.serializer);
-        /*---------------------- Register Message Handlers -------------------------- */
+        /*---------------------- Register TCP Handlers -------------------------- */
+
         try {
             registerMessageHandler(cId, SaveMessage.MSG_ID, this::uponSaveMessage, this::uponSaveMsgFail);
             registerMessageHandler(cId, SuccessSaveMessage.MSG_ID, this::uponSuccessSaveMessage, this::uponFailSave);
@@ -98,7 +103,7 @@ public class Storage extends GenericProtocol {
             e.printStackTrace();
             System.exit(1);
         }
-        //Now we can start sending messages
+        // Now we can start sending messages
         channelReady = true;
     }
 
@@ -106,18 +111,17 @@ public class Storage extends GenericProtocol {
 
         UUID cont = UUID.randomUUID();
         context.put(cont, op);
-        //find "saver" host
+        // find "saver" host
         LookupRequest getHost = new LookupRequest(op.getId(), cont, op.getOpType());
         sendRequest(getHost, DHT_PROTOCOL);
     }
 
     /*--------------------------------- Requests ---------------------------------------- */
     private void uponStoreRequest(StoreRequest request, short sourceProto) {
-        logger.info("entrei");
 
-        if (!channelReady) return;
+        if (!channelReady)
+            return;
 
-        logger.info("entrei2");
         BigInteger id = generateHash(request.getName());
         byte[] content = request.getContent();
         cache.put(id, new CacheContent(LocalDateTime.now(), content));
@@ -126,7 +130,8 @@ public class Storage extends GenericProtocol {
     }
 
     private void uponRetrieveRequest(RetrieveRequest request, short sourceProto) {
-        if (!channelReady) return;
+        if (!channelReady)
+            return;
 
         BigInteger id = generateHash(request.getName());
         byte[] content = (cache.get(id) == null) ? store.get(id) : cache.get(id).getContent();
@@ -134,7 +139,7 @@ public class Storage extends GenericProtocol {
         if (content == null) {
             findHost(new Operation(false, id, request.getName()));
         } else {
-            //TODO - uuid pode ser random? - provavelmente sim
+            // TODO - uuid pode ser random? - provavelmente sim
             sendReply(new RetrieveOKReply(request.getName(), null, content), APP_PROTOCOL);
         }
     }
@@ -142,30 +147,32 @@ public class Storage extends GenericProtocol {
     /*--------------------------------- Replies ---------------------------------------- */
     @SuppressWarnings("UnnecessaryLocalVariable")
     private void uponLookupResponse(LookupResponse response, short sourceProto) {
-        UUID responseUID = UUID.randomUUID(); //TODO - remove when uuid in response done
+        UUID responseUID = response.getMid(); // TODO - remove when uuid in response done
         UUID contID = responseUID;
         List<Host> hostList = response.getHost();
         context.get(contID).setHostList(hostList);
 
-        if (context.get(contID).getOpType()) { //True if insert/Put; False if retrieve/Get
-            byte[] content = cache.get(response.getObjId()).getContent();
+        for (Host h : hostList) {
+            if (!outgoingcons.contains(h)) {
+                outgoingcons.add(h);
+                openConnection(h);
+            }
+            if (context.get(contID).getOpType()) { // True if insert/Put; False if retrieve/Get
+                byte[] content = cache.get(response.getObjId()).getContent();
 
-            hostList.forEach(host -> {
-                if (host.equals(me)) {
+                if (h.equals(me)) {
                     store.put(response.getObjId(), content);
                     sendReply(new StoreOKReply(context.get(contID).getName(), contID), APP_PROTOCOL);
                 }
-            });
 
-            hostList.forEach(host -> {
-                SaveMessage requestMsg = new SaveMessage(contID, response.getObjId(), host, content);
-                sendMessage(requestMsg, host);
-            });
+                SaveMessage requestMsg = new SaveMessage(contID, response.getObjId(), h, content);
+                sendMessage(requestMsg, h);
 
-        } else {
-            Host host = context.get(contID).getHost();
-            GetMessage getMsg = new GetMessage(contID, context.get(contID).getId());
-            sendMessage(getMsg, host);
+            } else {
+                Host host = context.get(contID).getHost();
+                GetMessage getMsg = new GetMessage(contID, context.get(contID).getId());
+                sendMessage(getMsg, host);
+            }
         }
     }
 
@@ -190,7 +197,7 @@ public class Storage extends GenericProtocol {
     }
 
     private void uponFailGet(GetMessage msg, Host host, short proto, Throwable throwable, int channelId) {
-        //TODO - check host + check if clause
+        // TODO - check host + check if clause
         if (context.get(msg.getMid()).nextHost() && cache.get(context.get(msg.getMid()).getId()) != null) {
             GetMessage getMsg = new GetMessage(msg.getMid(), msg.getObjId());
             sendMessage(getMsg, host);
@@ -201,15 +208,15 @@ public class Storage extends GenericProtocol {
         }
     }
 
-    private void uponFailRetrieve(ThereYouGoMessage msg, Host host, short destProto,
-                                  Throwable throwable, int channelId) {
+    private void uponFailRetrieve(ThereYouGoMessage msg, Host host, short destProto, Throwable throwable,
+                                  int channelId) {
         logger.error("Message {} to {} failed, reason: {}", msg, host, throwable);
         sendReply(new RetrieveFailedReply(context.get(msg.getMid()).getName(), msg.getMid()), APP_PROTOCOL);
     }
 
-    private void uponSaveMsgFail(ProtoMessage msg, Host host, short destProto,
-                                 Throwable throwable, int channelId) {
-        //If a message fails to be sent, for whatever reason, log the message and the reason
+    private void uponSaveMsgFail(ProtoMessage msg, Host host, short destProto, Throwable throwable, int channelId) {
+        // If a message fails to be sent, for whatever reason, log the message and the
+        // reason
         logger.error("Message {} to {} failed, reason: {}", msg, host, throwable);
     }
 

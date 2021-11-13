@@ -104,6 +104,14 @@ public class Kelips extends GenericProtocol {
         registerMessageHandler(channelId, GetDiffAgFileMessage.MESSAGE_ID, this::uponGetDiffAgFileMessage, this::uponMsgFail);
         registerMessageHandler(channelId, GetFileReply.MESSAGE_ID, this::uponLookupReplyMessage, this::uponMsgFail);
 
+        /*--------------------- Register Message Serializers ----------------------------- */
+        registerMessageSerializer(channelId, KelipsJoinRequest.MESSAGE_ID, KelipsJoinRequest.serializer);
+        registerMessageSerializer(channelId, KelipsJoinReply.MESSAGE_ID, KelipsJoinReply.serializer);
+        registerMessageSerializer(channelId, KelipsInformRequest.MESSAGE_ID, KelipsInformRequest.serializer);
+        //registerMessageSerializer(channelId, GetFileMessage.MESSAGE_ID, GetFileMessage.serializer);
+        //registerMessageSerializer(channelId, GetDiffAgFileMessage.MESSAGE_ID, GetDiffAgFileMessage.serializer);
+        //registerMessageSerializer(channelId, GetFileReply.MESSAGE_ID, GetFileReply.serializer);
+
 
         /*--------------------- Register Request Handlers ----------------------------- */
         registerRequestHandler(LookupRequest.REQUEST_ID, this::uponLookupRequest);
@@ -127,19 +135,24 @@ public class Kelips extends GenericProtocol {
     @Override
     public void init(Properties properties) {
         triggerNotification(new ChannelCreated(channelId));
-        if (properties.contains("contact")) {
+        if (properties.containsKey("contact")) {
+            logger.info("Contains contact");
             try {
                 String contact = properties.getProperty("contact");
                 String[] hostElems = contact.split(":");
                 Host contactHost = new Host(InetAddress.getByName(hostElems[0]), Short.parseShort(hostElems[1]));
+                if(contactHost.equals(me)){
+                    agView.add(me);
+                    return;
+                }
                 connect(contactHost, Reason.NEW_JOIN);
             } catch (Exception e) {
                 logger.error("Invalid contact on configuration: '" + properties.getProperty("contact"));
                 System.exit(-1);
             }
         }
-
-        agView.add(me);
+        logger.info("Nao Contains contact");
+        //agView.add(me);
         //setupPeriodicTimer(new GossipTimer(), 5000, 20000);
     }
 
@@ -222,7 +235,7 @@ public class Kelips extends GenericProtocol {
 
     private void uponOutConnectionDown(OutConnectionDown event, int channelId) {
         Host peer = event.getNode();
-        logger.debug("Out Connection to {} is down cause {}", peer, event.getCause());
+        logger.info("Out Connection to {} is down cause {}", peer, event.getCause());
 
         BigInteger hash = HashGenerator.generateHash(peer.toString());
         int fromID = hash.mod(BigInteger.valueOf(this.agNum)).intValueExact();
@@ -231,7 +244,7 @@ public class Kelips extends GenericProtocol {
 
     private void uponOutConnectionFailed(OutConnectionFailed<ProtoMessage> event, int channelId) {
         Host peer = event.getNode();
-        logger.debug("Connection to {} failed cause: {}", peer, event.getCause());
+        logger.info("Connection to {} failed cause: {}", peer, event.getCause());
 
         BigInteger hash = HashGenerator.generateHash(peer.toString());
         int fromID = hash.mod(BigInteger.valueOf(this.agNum)).intValueExact();
@@ -246,7 +259,7 @@ public class Kelips extends GenericProtocol {
     //A connection someone established to me is disconnected.
     private void uponInConnectionDown(InConnectionDown event, int channelId) {
         Host peer = event.getNode();
-        logger.debug("In Connection to {} is down cause {}", peer, event.getCause());
+        logger.info("In Connection to {} is down cause {}", peer, event.getCause());
 
         BigInteger hash = HashGenerator.generateHash(peer.toString());
         int fromID = hash.mod(BigInteger.valueOf(this.agNum)).intValueExact();
@@ -540,19 +553,19 @@ public class Kelips extends GenericProtocol {
         }
 
         Set<Host> aux = candidates.get(fromID);
-        aux.removeIf(h -> h.equals(peer));
+        if(aux.isEmpty()){
+        if(peer!=null && aux.contains(peer))
+            aux.removeIf(h -> h.equals(peer));
 
-        candidates.put(fromID, aux);
+        candidates.put(fromID, aux);}
         pending.remove(peer);
 
+        List<BigInteger> temp = new ArrayList<>();
         filetuples.forEach((i, h) -> {
-            if (h.equals(peer)) filetuples.remove(i);
+            if (h.equals(peer)) temp.add(i);
         });
-        /*
-        for(Host h: filetuples.values()){
-            //Remover o host dos filetuples se houver
-        }
-        */
+        temp.forEach(i -> {filetuples.remove(i);});
+
         closeConnection(peer);
     }
 

@@ -36,6 +36,7 @@ public class Main {
         //Loads properties from the configuration file, and merges them with properties passed in the launch arguments
         Properties props = Babel.loadConfig(args, DEFAULT_CONF);
         props.setProperty("prepare_time", "5");
+        logger.info("Props {}", props.toString());
 
         //If you pass an interface name in the properties (either file or arguments), this wil get the IP of that interface
         //and create a property "address=ip" to be used later by the channels.
@@ -47,7 +48,7 @@ public class Main {
                 Integer.parseInt(props.getProperty("port")));
 
         logger.info("Hello, I am {}", myself);
-        
+        //props.setProperty("contact", "192.168.1.4:10000");
  
         // Application
         AutomatedApplication app = new AutomatedApplication(myself, props, Storage.PROTOCOL_ID);
@@ -75,7 +76,7 @@ public class Main {
        
         gossip.init(props);
 
-	dht.init(props);
+	    dht.init(props);
 
         //Start babel and protocol threads
         babel.start();

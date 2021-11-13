@@ -61,6 +61,11 @@ public class Kademlia extends GenericProtocol {
         registerMessageHandler(channelId, KademliaFindNodeRequest.MESSAGE_ID, this::uponFindNode, this::uponMsgFail);
         registerMessageHandler(channelId, KademliaFindNodeReply.MESSAGE_ID, this::uponFindNodeReply, this::uponMsgFail);
 
+        /*--------------------- Register Message Serializers ----------------------------- */
+        //registerMessageSerializer(channelId, KademliaFindNodeRequest.MESSAGE_ID, KademliaFindNodeRequest.serializer);
+        //registerMessageSerializer(channelId, KademliaFindNodeReply.MESSAGE_ID, KademliaFindNodeReply.serializer);
+
+
         /*----------------------------- Register Request Handlers ----------------------------- */
         registerRequestHandler(LookupRequest.REQUEST_ID, this::uponLookupRequest);
 
@@ -74,19 +79,20 @@ public class Kademlia extends GenericProtocol {
     @Override
     public void init(Properties properties) throws HandlerRegistrationException, IOException {
         triggerNotification(new ChannelCreated(channelId));
-        if (properties.contains("contact")) {
+        if (properties.containsKey("contact")) {
+            logger.info("Contains contact");
             try {
                 String contact = properties.getProperty("contact");
                 String[] hostElems = contact.split(":");
                 Host contactHost = new Host(InetAddress.getByName(hostElems[0]), Short.parseShort(hostElems[1]));
                 openConnection(contactHost);
-                alfa = Integer.parseInt(properties.getProperty("alfaValue"));
-                k = Integer.parseInt(properties.getProperty("kValue"));
+                logger.info("Contains contact");
             } catch (Exception e) {
                 logger.error("Invalid contact on configuration: '" + properties.getProperty("contact"));
                 System.exit(-1);
             }
         }
+        logger.info("Nao Contains contact");
     }
 
     /* --------------------------------- Messages ---------------------------- */
@@ -142,7 +148,6 @@ public class Kademlia extends GenericProtocol {
         //Tenho de apanhar o node a partir do host
         insert_on_k_bucket(new Node(peer, HashGenerator.generateHash(peer.toString()))); //Adiciona o contacto ao k_bucket 
         node_lookup(my_node.getNodeId(), null);
-
     }
 
     private void uponOutConnectionDown(OutConnectionDown event, int channelId) {
