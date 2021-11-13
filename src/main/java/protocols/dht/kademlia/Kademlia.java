@@ -138,15 +138,16 @@ public class Kademlia extends GenericProtocol {
     // If a connection is successfully established, this event is triggered.
     private void uponOutConnectionUp(OutConnectionUp event, int channelId) {
         Host peer = event.getNode();
-        logger.debug("Out Connection to {} is up.", peer);
+        logger.info("Out Connection to {} is up.", peer);
         //Tenho de apanhar o node a partir do host
         insert_on_k_bucket(new Node(peer, HashGenerator.generateHash(peer.toString()))); //Adiciona o contacto ao k_bucket 
         node_lookup(my_node.getNodeId(), null);
+
     }
 
     private void uponOutConnectionDown(OutConnectionDown event, int channelId) {
         Host peer = event.getNode();
-        logger.debug("Out Connection to {} is down cause {}", peer, event.getCause());
+        logger.info("Out Connection to {} is down cause {}", peer, event.getCause());
 
         Node n = new Node(peer, HashGenerator.generateHash(peer.toString()));
         this.remove_from_k_bucket(n);
@@ -154,14 +155,14 @@ public class Kademlia extends GenericProtocol {
 
     private void uponOutConnectionFailed(OutConnectionFailed<ProtoMessage> event, int channelId) {
         Host peer = event.getNode();
-        logger.debug("Connection to {} failed cause: {}", peer, event.getCause());
+        logger.info("Connection to {} failed cause: {}", peer, event.getCause());
     }
 
 
     //A connection someone established to me is disconnected.
     private void uponInConnectionDown(InConnectionDown event, int channelId) {
         Host peer = event.getNode();
-        logger.debug("In Connection to {} is down cause {}", peer, event.getCause());
+        logger.info("In Connection to {} is down cause {}", peer, event.getCause());
 
         Node n = new Node(peer, HashGenerator.generateHash(peer.toString()));
         this.remove_from_k_bucket(n);
@@ -174,13 +175,14 @@ public class Kademlia extends GenericProtocol {
 
         List<Node> k_bucket = k_buckets_list.get(i);
         if (k_bucket == null)
-            k_bucket = new ArrayList<Node>();
+            k_bucket = new ArrayList<>();
 
         if(k_bucket.contains(node)){ //colocar o no na cauda da lista
             k_bucket.remove(node);
-            k_bucket.add(node); 
-        } else
-            k_bucket.add(node);
+        }
+        k_bucket.add(node);
+
+        logger.info("k_bucket size: {}",k_bucket.size());
     }
 
     private void remove_from_k_bucket(Node node){
@@ -211,7 +213,7 @@ public class Kademlia extends GenericProtocol {
 
     private void node_lookup(BigInteger id, UUID mid) {
         List<Node> kclosest = find_node(id); //list containing the k closest nodes
-
+        logger.info("pre null pointer: {}",kclosest.size());
         QueryState query = new QueryState(kclosest);
 
         for(int i = 0; i < alfa; i++){

@@ -79,7 +79,6 @@ public class Storage extends GenericProtocol {
 
     //Upon receiving the channelId from the membership, register our own callbacks and serializers
     private void uponChannelCreated(ChannelCreated notification, short sourceProto) {
-        logger.info("In uponChannelCreated");
         int cId = notification.getChannelId();
         // Allows this protocol to receive events from this channel.
         registerSharedChannel(cId);
