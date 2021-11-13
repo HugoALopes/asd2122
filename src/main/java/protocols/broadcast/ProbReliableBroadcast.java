@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.util.*;
 
 public class ProbReliableBroadcast extends GenericProtocol {
-    private static final Logger logger = LogManager.getLogger(FloodBroadcast.class);
+    private static final Logger logger = LogManager.getLogger(ProbReliableBroadcast.class);
 
     //Protocol information, to register in babel
     public static final String PROTOCOL_NAME = "ProbReliableBroadcast";
@@ -94,7 +94,7 @@ public class ProbReliableBroadcast extends GenericProtocol {
             //Deliver the message to the application (even if it came from it)
             triggerNotification(new DeliverNotification(msg.getMid(), msg.getSender(), msg.getContent()));
 
-            fanout=(int)Math.log((double)neighbours.size());
+            fanout=(int)Math.log(neighbours.size());
             Random rnd = new Random();
             Set <Integer> index = new HashSet<>();
             while (index.size()<fanout)

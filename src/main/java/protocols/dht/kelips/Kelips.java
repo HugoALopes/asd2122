@@ -108,9 +108,9 @@ public class Kelips extends GenericProtocol {
         registerMessageSerializer(channelId, KelipsJoinRequest.MESSAGE_ID, KelipsJoinRequest.serializer);
         registerMessageSerializer(channelId, KelipsJoinReply.MESSAGE_ID, KelipsJoinReply.serializer);
         registerMessageSerializer(channelId, KelipsInformRequest.MESSAGE_ID, KelipsInformRequest.serializer);
-        //registerMessageSerializer(channelId, GetFileMessage.MESSAGE_ID, GetFileMessage.serializer);
-        //registerMessageSerializer(channelId, GetDiffAgFileMessage.MESSAGE_ID, GetDiffAgFileMessage.serializer);
-        //registerMessageSerializer(channelId, GetFileReply.MESSAGE_ID, GetFileReply.serializer);
+        registerMessageSerializer(channelId, GetFileMessage.MESSAGE_ID, GetFileMessage.serializer);
+        registerMessageSerializer(channelId, GetDiffAgFileMessage.MESSAGE_ID, GetDiffAgFileMessage.serializer);
+        registerMessageSerializer(channelId, GetFileReply.MESSAGE_ID, GetFileReply.serializer);
 
 
         /*--------------------- Register Request Handlers ----------------------------- */
@@ -118,7 +118,7 @@ public class Kelips extends GenericProtocol {
 
         /*--------------------- Register Timer Handlers ----------------------------- */
         registerTimerHandler(InfoTimer.TIMER_ID, this::uponInfoTime);
-        registerTimerHandler(GossipTimer.TIMER_ID, this::broadcastRequest);
+        //registerTimerHandler(GossipTimer.TIMER_ID, this::broadcastRequest);
 
 
         /*--------------------- TCPEvents ----------------------------- */
@@ -138,7 +138,7 @@ public class Kelips extends GenericProtocol {
         if (properties.containsKey("contact")) {
             try {
                 String contact = properties.getProperty("contact");
-                logger.info("{} is contact", contact);
+                logger.info("{} ->{} is contact",me, contact);
                 String[] hostElems = contact.split(":");
                 Host contactHost = new Host(InetAddress.getByName(hostElems[0]), Short.parseShort(hostElems[1]));
                 if (contactHost.equals(me)) {
@@ -150,8 +150,8 @@ public class Kelips extends GenericProtocol {
                 logger.error("Invalid contact on configuration: '" + properties.getProperty("contact"));
                 System.exit(-1);
             }
-        }
-        logger.info("Do no Contains contact");
+        } else
+            logger.info("{} -> Do not Contains contact", me);
         agView.add(me);
         //setupPeriodicTimer(new GossipTimer(), 5000, 20000);
     }
@@ -204,6 +204,7 @@ public class Kelips extends GenericProtocol {
     /*--------------------------------- TCP ---------------------------------------- */
     // If a connection is successfully established, this event is triggered.
     private void uponOutConnectionUp(OutConnectionUp event, int channelId) {
+        logger.info("In uponOutConnectionUp");
         Host peer = event.getNode();
         triggerNotification(new NeighbourDown(peer));
         Set<Reason> reasons = pending.remove(peer);
@@ -258,10 +259,11 @@ public class Kelips extends GenericProtocol {
     //A connection someone established to me is disconnected.
     private void uponInConnectionDown(InConnectionDown event, int channelId) {
         Host peer = event.getNode();
-        logger.info("In Connection to {} is down cause {}", peer, event.getCause());
+        logger.info("{} -> In Connection to {} is down cause {}",me, peer, event.getCause());
 
         BigInteger hash = HashGenerator.generateHash(peer.toString());
         int fromID = hash.mod(BigInteger.valueOf(this.agNum)).intValueExact();
+        logger.info(contacts.toString());
         this.removeContact(fromID, peer);
     }
 
@@ -395,6 +397,7 @@ public class Kelips extends GenericProtocol {
         int fAG = lookupRequest.getObjID().mod(BigInteger.valueOf(agNum)).intValueExact();
         Host host;
         List<Host> hostList = new ArrayList<>();
+        logger.info("In Upon Lookup");
 
         if (fAG == myAG) {
             //opType - True if insert/Put; False if retrieve/Get
@@ -441,8 +444,9 @@ public class Kelips extends GenericProtocol {
             //opType - True if insert/Put; False if retrieve/Get
             //if (lookupRequest.getOpType()) { /*no need to do nothing*/ }
 
+            logger.info("{} -> contacts {}", me, contacts.toString());
             Set<Host> contact = contacts.get(fAG);
-            if (contact != null) {
+            if (contact != null && contact.size()!=0) {
                 int index = (int) (Math.random() * contact.size());
                 Host c = (Host) contact.toArray()[index];
 
@@ -456,6 +460,9 @@ public class Kelips extends GenericProtocol {
                     aux = new HashSet<Host>();
                 aux.add(c);
                 ongoinglookUp.put(msg.getUid(), aux);
+            } else {
+                logger.info("asneira");
+                System.exit(-1);
             }
         }
     }
@@ -515,6 +522,7 @@ public class Kelips extends GenericProtocol {
 
     /* --------------------------------- Utils ---------------------------- */
     private void connect(Host peer, Reason reason) {
+        logger.info("In connecting");
         if (pending.containsKey(peer)) {
             Set<Reason> set = pending.get(peer);
             set.add(reason);
@@ -529,6 +537,7 @@ public class Kelips extends GenericProtocol {
 
     @SuppressWarnings("DuplicatedCode")
     private void removeContact(int fromID, Host peer) {
+        logger.info("In remove Contact");
         if (fromID == myAG) {
             agView.removeIf(n -> n.equals(peer));
 
@@ -541,8 +550,9 @@ public class Kelips extends GenericProtocol {
             }
         } else {
             Set<Host> aux = contacts.get(fromID);
-            if (!aux.isEmpty())
+            if (aux!=null){//if (!aux.isEmpty())
                 aux.removeIf(n -> n.equals(peer));
+            }
 
             Set<Host> cH = candidates.get(fromID);
             if (cH != null) {
@@ -572,6 +582,7 @@ public class Kelips extends GenericProtocol {
         closeConnection(peer);
     }
 
+/*
     private void broadcastRequest(GossipTimer timer, long timerId) {
         InformationGossip msg = new InformationGossip(contacts, filetuples, agView);
         BroadcastRequest request = new BroadcastRequest(UUID.randomUUID(), this.me, Serializer.serialize(msg));
@@ -580,5 +591,5 @@ public class Kelips extends GenericProtocol {
         //And send it to the dissemination protocol
         //sendRequest(request, FloodBroadcast.PROTOCOL_ID);
         sendRequest(request, ProbReliableBroadcast.PROTOCOL_ID);
-    }
+    }*/
 }

@@ -34,8 +34,8 @@ public class Storage extends GenericProtocol {
 
     private static final int CACHE_TIMEOUT = 50000;
     private final Host me;
-    @SuppressWarnings("FieldCanBeLocal")
-    private int channelId;
+    //@SuppressWarnings("FieldCanBeLocal")
+    //private int channelId;
 
     private final Map<BigInteger, CacheContent> cache;
     private final Map<BigInteger, byte[]> store;
@@ -64,8 +64,7 @@ public class Storage extends GenericProtocol {
 
         /*--------------------- Register Notification Handlers ----------------------------- */
         // subscribeNotification(NeighbourUp.NOTIFICATION_ID, this::uponNeighbourUp);
-        // subscribeNotification(NeighbourDown.NOTIFICATION_ID,
-        // this::uponNeighbourDown);
+        // subscribeNotification(NeighbourDown.NOTIFICATION_ID, this::uponNeighbourDown);
         subscribeNotification(ChannelCreated.NOTIFICATION_ID, this::uponChannelCreated);
 
         /*--------------------- Register Timer Handlers ----------------------------- */

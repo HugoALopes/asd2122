@@ -36,6 +36,7 @@ public class Main {
         //Loads properties from the configuration file, and merges them with properties passed in the launch arguments
         Properties props = Babel.loadConfig(args, DEFAULT_CONF);
         props.setProperty("prepare_time", "5");
+        props.setProperty("contact", "192.168.1.3:10000");
 
         //If you pass an interface name in the properties (either file or arguments), this wil get the IP of that interface
         //and create a property "address=ip" to be used later by the channels.
@@ -72,7 +73,7 @@ public class Main {
         /** You need to uncomment the next two lines when you have protocols to fill those gaps **/
         storage.init(props);
        
-        gossip.init(props);
+        //gossip.init(props);
 
 	    dht.init(props);
 
