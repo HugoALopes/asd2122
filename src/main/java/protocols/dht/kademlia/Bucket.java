@@ -3,18 +3,16 @@ package protocols.dht.kademlia;
 import java.math.BigInteger;
 import java.util.ArrayList;
 
-import pt.unl.fct.di.novasys.network.data.Host;
-
 public class Bucket {
 
     private BigInteger min;
     private BigInteger max;
-    private ArrayList<Node> hosts; 
+    private ArrayList<Node> nodes; 
 
     public Bucket(BigInteger min, BigInteger max){  
         this.min = min;
         this.max = max;
-        hosts = new ArrayList<>(); 
+        nodes = new ArrayList<>(); 
     }
     
     public BigInteger getMin(){
@@ -25,19 +23,19 @@ public class Bucket {
         return this.max;
     }
 
-    public ArrayList<Node> getHosts(){
-        return this.hosts;
+    public ArrayList<Node> getNodes(){
+        return this.nodes;
     }
 
-    public void addHost(Node h){
-        hosts.add(h);
+    public void addNode(Node n){
+        nodes.add(n);
     }
 
-    public void removeHost(Node h){
-        hosts.remove(h);
+    public void removeNode(Node n){
+        nodes.remove(n);
     }
 
-    public Boolean containsHost(Node h){
-        return this.hosts.contains(h);
+    public Boolean containsNode(Node n){
+        return nodes.contains(n);
     }
 }

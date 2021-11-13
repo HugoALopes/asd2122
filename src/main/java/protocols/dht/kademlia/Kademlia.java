@@ -92,6 +92,8 @@ public class Kademlia extends GenericProtocol {
                 Host contactHost = new Host(InetAddress.getByName(hostElems[0]), Short.parseShort(hostElems[1]));
                 openConnection(contactHost);
                 logger.info("Contains contact");
+                Bucket b = new Bucket(new BigInteger("0"), new BigInteger("0"));
+                b.addNode(my_node);
             } catch (Exception e) {
                 logger.error("Invalid contact on configuration: '" + properties.getProperty("contact"));
                 System.exit(-1);
@@ -129,7 +131,7 @@ public class Kademlia extends GenericProtocol {
             LookupResponse reply = new LookupResponse(msg.getUid(), msg.getIdToFind(), query.getKHosts());
             sendReply(reply, Storage.PROTOCOL_ID);
             queriesByIdToFind.remove(idToFind);
-        } else {
+        } else if(!query.hasStabilised()){
             List<Node> kclosest = query.getKclosest();
             for (Node n : kclosest) {
                 if (!query.alreadyQueried(n) && !query.stillOngoing(n)) { // ainda não contactei com este no
@@ -151,9 +153,7 @@ public class Kademlia extends GenericProtocol {
     private void uponOutConnectionUp(OutConnectionUp event, int channelId) {
         Host peer = event.getNode();
         logger.info("Out Connection to {} is up.", peer);
-        // Tenho de apanhar o node a partir do host
-        insert_on_k_bucket(new Node(peer, HashGenerator.generateHash(peer.toString()))); // Adiciona o contacto ao
-                                                                                         // k_bucket
+        insert_on_k_bucket(new Node(peer, HashGenerator.generateHash(peer.toString()))); 
         node_lookup(my_node.getNodeId(), null);
     }
 
@@ -185,13 +185,13 @@ public class Kademlia extends GenericProtocol {
 
         Bucket insert_bucket = getBucket(distance);
 
-        if (insert_bucket.containsHost(node)) { // colocar o no na cauda da lista
-            insert_bucket.removeHost(node);
+        if (insert_bucket.containsNode(node)) { // colocar o no na cauda da lista
+            insert_bucket.removeNode(node);
         }
-        insert_bucket.addHost(node);
+        insert_bucket.addNode(node);
 
-        ArrayList<Node> hosts = insert_bucket.getHosts();
-        if(hosts.size() > k  && hosts.contains(this.my_node)){
+        ArrayList<Node> hosts = insert_bucket.getNodes();
+        if(hosts.size() > k  && hosts.contains(my_node)){
             this.divideBucket(insert_bucket);
             logger.info("k_bucket divided.");
         }
@@ -204,28 +204,26 @@ public class Kademlia extends GenericProtocol {
 
         Bucket bucket_remove = getBucket(distance);
 
-        if (bucket_remove.containsHost(node)){
-            bucket_remove.removeHost(node);
+        if (bucket_remove.containsNode(node)){
+            bucket_remove.removeNode(node);
         }
     }
 
     private List<Node> find_node(BigInteger node_id) {
         BigInteger distance = calculate_dist(node_id, my_node.getNodeId());
         
-        List<Node> closest_nodes = new ArrayList<Node>(k); // Definir um comparador para que os nos fiquem organizados
+        List<Node> closest_nodes = new ArrayList<Node>(k); 
         
-     
         Bucket b = getBucket(distance);
-        for(Node n: b.getHosts()){
-            if(closest_nodes.size() <= k)
-                closest_nodes.add(n);
-            }
+        for(Node n: b.getNodes()){
+            closest_nodes.add(n);
+        }
   
-        while(closest_nodes.size() < k){
-            for(Bucket bucket: this.k_buckets_list){
+        if(closest_nodes.size() < k){
+            for(Bucket bucket: k_buckets_list){
                 if(b.getMax().compareTo(bucket.getMin().subtract(new BigInteger("1"))) == 0){
-                    for(Node h: bucket.getHosts()){
-                        closest_nodes.add(h);
+                    for(Node node: bucket.getNodes()){
+                        closest_nodes.add(node);
                         if(closest_nodes.size() >= k)
                             break;
                     }
@@ -238,7 +236,7 @@ public class Kademlia extends GenericProtocol {
 
     private void node_lookup(BigInteger id, UUID mid) {
         List<Node> kclosest = find_node(id); // list containing the k closest nodes
-        logger.info("pre null pointer: {}", kclosest.size());
+//        logger.info("pre null pointer: {}", kclosest.size());
         QueryState query = new QueryState(kclosest);
 
         for (int i = 0; i < alfa && i < kclosest.size(); i++) {
@@ -246,11 +244,11 @@ public class Kademlia extends GenericProtocol {
             sendMessage(new KademliaFindNodeRequest(mid, id, my_node), kclosest.get(i).getHost());
         }
 
-        if (kclosest.size() == 0) {
+      /*  if (kclosest.size() == 0) {
             ArrayList<Host> myHost = new ArrayList<Host>();
             myHost.add(this.my_node.getHost());
             sendReply(new LookupResponse(mid, id, myHost), Storage.PROTOCOL_ID);
-        }
+        }*/
 
         queriesByIdToFind.put(id, query);
     }
@@ -260,29 +258,27 @@ public class Kademlia extends GenericProtocol {
     }
 
     private Bucket getBucket(BigInteger dist){
-        Bucket result = null;
-        
-        for(Bucket b: this.k_buckets_list){
-            if((dist.compareTo(b.getMax()) == -1) && ((dist.compareTo(b.getMin()) == 1) || dist.compareTo(b.getMin()) == 0))
-                result = b;
+        for(Bucket b: k_buckets_list){
+            if((dist.compareTo(b.getMax()) == -1 && dist.compareTo(b.getMin()) == 1) 
+                || dist.compareTo(b.getMin()) == 0 || dist.compareTo(b.getMin()) == 0)
+                return b;
         }
         
-        return result;
+        return null;
     }
 
-    //Nao percebo exatamente como dividir
     private void divideBucket(Bucket b){
-        BigInteger dist_interval_values = b.getMax().subtract(b.getMin());
-        Bucket new_b = new Bucket(dist_interval_values.divide(new BigInteger("2")), b.getMax());
-        Bucket new_b_2 = new Bucket(b.getMin(), dist_interval_values.divide(new BigInteger("2")));
+        BigInteger aux =  b.getMax().divide(new BigInteger("2"));
+        Bucket new_b = new Bucket(new BigInteger("0"), aux);
+        Bucket new_b_2 = new Bucket(aux.add(new BigInteger("1")), b.getMax());
 
-        ArrayList<Node> hosts = b.getHosts();
-        for(Node h: hosts){
-            BigInteger dist = calculate_dist(h.getNodeId(), this.my_node.getNodeId());
-            if(dist.compareTo(new_b.getMax()) == 1)
-                new_b_2.addHost(h);
+        ArrayList<Node> nodes = b.getNodes();
+        for(Node node: nodes){
+            BigInteger dist = calculate_dist(node.getNodeId(), this.my_node.getNodeId());
+            if(dist.compareTo(aux) == 1)
+                new_b_2.addNode(node);
             else
-                new_b.addHost(h);
+                new_b.addNode(node);
         }
 
         this.k_buckets_list.remove(b);
