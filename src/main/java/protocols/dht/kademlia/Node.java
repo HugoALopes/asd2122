@@ -11,7 +11,11 @@ public class Node {
 
     public Node(Host host, BigInteger nodeId){
         this.host = host;
-        this.nodeId = nodeId;
+      
+        if(nodeId.signum() == -1)
+        	this.nodeId = nodeId.multiply(BigInteger.valueOf(-1));
+        else
+        	this.nodeId = nodeId;
     }
 
     public Host getHost(){

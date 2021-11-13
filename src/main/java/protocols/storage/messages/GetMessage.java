@@ -18,7 +18,7 @@ public class GetMessage extends ProtoMessage {
 
     public GetMessage(UUID uid, BigInteger id) {
         super(MSG_ID);
-        this.mid=mid;
+        this.mid=uid;
         this.id = id;
     }
 

@@ -82,7 +82,6 @@ public class Kademlia extends GenericProtocol {
         if (properties.containsKey("contact")) {
             logger.info("Contains contact");
             try {
-                String contact = properties.getProperty("contact");
                 String[] hostElems = contact.split(":");
                 Host contactHost = new Host(InetAddress.getByName(hostElems[0]), Short.parseShort(hostElems[1]));
                 openConnection(contactHost);
@@ -221,11 +220,21 @@ public class Kademlia extends GenericProtocol {
         logger.info("pre null pointer: {}",kclosest.size());
         QueryState query = new QueryState(kclosest);
 
-        for(int i = 0; i < alfa; i++){
+        for(int i = 0; i < alfa && i < kclosest.size(); i++){
             query.sendFindNodeRequest(kclosest.get(i));
             sendMessage(new KademliaFindNodeRequest(mid, id, my_node), kclosest.get(i).getHost());
         }
-
+	
+	if(kclosest.size() == 0){
+		ArrayList<Host> myHost = new ArrayList<Host>();
+		myHost.add(this.my_node.getHost());
+		sendReply(new LookupResponse(mid, id, myHost), Storage.PROTOCOL_ID); 
+	}
+           
+	
+		
+		
+	
         queriesByIdToFind.put(id, query);
     }
 
