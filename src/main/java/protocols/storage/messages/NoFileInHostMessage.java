@@ -3,11 +3,8 @@ package protocols.storage.messages;
 import io.netty.buffer.ByteBuf;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 import pt.unl.fct.di.novasys.network.ISerializer;
-import pt.unl.fct.di.novasys.network.data.Host;
 
 import java.io.IOException;
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 public class NoFileInHostMessage extends ProtoMessage {
@@ -27,12 +24,13 @@ public class NoFileInHostMessage extends ProtoMessage {
         return mid;
     }
 
-    //TODO - check serializer
     public static ISerializer<NoFileInHostMessage> serializer = new ISerializer<>() {
         @Override
         public void serialize(NoFileInHostMessage msg, ByteBuf out) throws IOException {
             out.writeLong(msg.mid.getMostSignificantBits());
             out.writeLong(msg.mid.getLeastSignificantBits());
+
+            out.writeShort(msg.getId());
         }
 
         @Override
@@ -41,7 +39,6 @@ public class NoFileInHostMessage extends ProtoMessage {
             long secondLong = in.readLong();
             UUID mid = new UUID(firstLong, secondLong);
 
-            //TODO - Check .toString
             return new NoFileInHostMessage(mid);
         }
     };

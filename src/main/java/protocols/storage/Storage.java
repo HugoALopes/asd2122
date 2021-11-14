@@ -127,7 +127,6 @@ public class Storage extends GenericProtocol {
         if(id.signum() == -1){
         	id = id.negate();
         }
-       
         byte[] content = request.getContent();
         cache.put(id, new CacheContent(LocalDateTime.now(), content)); //Porque é que é necessário colocar em cache?
 
@@ -146,6 +145,7 @@ public class Storage extends GenericProtocol {
         }
            
         byte[] content = (cache.get(id) == null) ? store.get(id) : cache.get(id).getContent();
+	
 
         if (content == null) {
             findHost(new Operation(false, id, request.getName()));
@@ -182,10 +182,17 @@ public class Storage extends GenericProtocol {
         } else {
             Operation op = context.get(contID);
             Host host = op.getHost();
-
-            GetMessage getMsg = new GetMessage(contID, context.get(contID).getId());
+	
+	    if(host.equals(me)){
+	    	if(op.nextHost())
+	    		host = op.getHost();
+	    }
+	     
+	    GetMessage getMsg = new GetMessage(contID, context.get(contID).getId());
             openConnection(host);
             sendMessage(getMsg, host);
+	 	
+            
         }
     }
 
@@ -193,7 +200,13 @@ public class Storage extends GenericProtocol {
     private void uponNoFileInHost(NoFileInHostMessage msg, Host host, short proto, int channelId){
         Operation op = context.get(msg.getUid());
         if(!op.alreadyAskedAll()){
-            Host h = op.getHost(); 
+            Host h = null;
+            
+            if(host.equals(me)){
+	    	if(op.nextHost())
+	    		host = op.getHost();
+	    }
+	      
             GetMessage getMsg = new GetMessage(msg.getUid(), context.get(msg.getUid()).getId());
             openConnection(h);
             sendMessage(getMsg, h);
