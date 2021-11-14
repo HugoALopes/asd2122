@@ -85,7 +85,7 @@ public class Kademlia extends GenericProtocol {
     public void init(Properties properties) throws HandlerRegistrationException, IOException {
         triggerNotification(new ChannelCreated(channelId));
         String contact = properties.getProperty("contact");
-        if (contact == "null") {
+        if (contact != "null") {
             try {
                 String[] hostElems = contact.split(":");
                 Host contactHost = new Host(InetAddress.getByName(hostElems[0]), Short.parseShort(hostElems[1]));
@@ -239,7 +239,9 @@ public class Kademlia extends GenericProtocol {
         List<Node> kclosest = find_node(id); // list containing the k closest nodes
         // logger.info("pre null pointer: {}", kclosest.size());
         QueryState query = new QueryState(kclosest);
-
+	
+	logger.info(mid + " dina " + my_node.getHost());
+	
         if(kclosest.size() == 1 && kclosest.get(0).equals(my_node)){
             ArrayList<Host> myHost = new ArrayList<>();
             myHost.add(my_node.getHost());
