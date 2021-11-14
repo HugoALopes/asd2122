@@ -2,12 +2,14 @@ package protocols.dht.kademlia.messages;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.net.InetAddress;
 import java.util.UUID;
 
 import io.netty.buffer.ByteBuf;
 import protocols.dht.kademlia.Node;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 import pt.unl.fct.di.novasys.network.ISerializer;
+import pt.unl.fct.di.novasys.network.data.Host;
 
 public class KademliaFindNodeRequest extends ProtoMessage{
     public final static short MESSAGE_ID = 1131;
@@ -53,8 +55,21 @@ public class KademliaFindNodeRequest extends ProtoMessage{
                 out.writeBytes(objId);
             }
 
-            Node.serializer.serialize(message.getSender(), out);
-            Node.serializer.serialize(message.getDest(), out);
+            out.writeBytes(message.getSender().getHost().getAddress().getAddress());
+            out.writeShort(message.getSender().getHost().getPort());
+            byte[] nodeId = message.getSender().getNodeId().toByteArray();
+            out.writeInt(nodeId.length);
+            if (nodeId.length > 0) {
+                out.writeBytes(nodeId);
+            }
+
+            out.writeBytes(message.getDest().getHost().getAddress().getAddress());
+            out.writeShort(message.getDest().getHost().getPort());
+            nodeId = message.getDest().getNodeId().toByteArray();
+            out.writeInt(nodeId.length);
+            if (nodeId.length > 0) {
+                out.writeBytes(nodeId);
+            }
 
             out.writeShort(message.getId());
         }
@@ -69,8 +84,26 @@ public class KademliaFindNodeRequest extends ProtoMessage{
             if (size > 0)
                 in.readBytes(objIdArr);
             BigInteger nodeToFind = new BigInteger(objIdArr);
-            Node sender = Node.serializer.deserialize(in);
-            Node dest = Node.serializer.deserialize(in);
+            
+            byte[] addrBytes = new byte[4];
+            in.readBytes(addrBytes);
+            int port = in.readShort() & '\uffff';
+            size = in.readInt();
+            byte[] nodeId = new byte[size];
+            if (size > 0)
+                in.readBytes(nodeId);
+            BigInteger nId = new BigInteger(nodeId);
+            Node sender = new Node(new Host(InetAddress.getByAddress(addrBytes), port), nId);
+            
+            addrBytes = new byte[4];
+            in.readBytes(addrBytes);
+            port = in.readShort() & '\uffff';
+            size = in.readInt();
+            nodeId = new byte[size];
+            if (size > 0)
+                in.readBytes(nodeId);
+            nId = new BigInteger(nodeId);
+            Node dest = new Node(new Host(InetAddress.getByAddress(addrBytes), port), nId);
 
             return new KademliaFindNodeRequest(mid, nodeToFind, sender, dest);
         }

@@ -1,12 +1,15 @@
 package protocols.dht.kademlia.messages;
 
 import java.io.IOException;
+import java.math.BigInteger;
+import java.net.InetAddress;
 import java.util.UUID;
 
 import io.netty.buffer.ByteBuf;
 import protocols.dht.kademlia.Node;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 import pt.unl.fct.di.novasys.network.ISerializer;
+import pt.unl.fct.di.novasys.network.data.Host;
 
 public class KademliaJoinRequest extends ProtoMessage{
     public final static short MESSAGE_ID = 1130;
@@ -35,7 +38,13 @@ public class KademliaJoinRequest extends ProtoMessage{
             out.writeLong(msg.uid.getMostSignificantBits());
             out.writeLong(msg.uid.getLeastSignificantBits());
 
-            Node.serializer.serialize(msg.getSenderNode(), out);
+            out.writeBytes(msg.getSenderNode().getHost().getAddress().getAddress());
+            out.writeShort(msg.getSenderNode().getHost().getPort());
+            byte[] nodeId = msg.getSenderNode().getNodeId().toByteArray();
+            out.writeInt(nodeId.length);
+            if (nodeId.length > 0) {
+                out.writeBytes(nodeId);
+            }
 
             out.writeShort(msg.getId());
             
@@ -47,7 +56,15 @@ public class KademliaJoinRequest extends ProtoMessage{
             long secondLong = in.readLong();
             UUID mid = new UUID(firstLong, secondLong);
      
-            Node sender = Node.serializer.deserialize(in);
+            byte[] addrBytes = new byte[4];
+            in.readBytes(addrBytes);
+            int port = in.readShort() & '\uffff';
+            int size = in.readInt();
+            byte[] nodeId = new byte[size];
+            if (size > 0)
+                in.readBytes(nodeId);
+            BigInteger nId = new BigInteger(nodeId);
+            Node sender = new Node(new Host(InetAddress.getByAddress(addrBytes), port), nId);
 
             return new KademliaJoinRequest(sender);
         }

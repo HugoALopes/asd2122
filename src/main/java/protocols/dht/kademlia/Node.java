@@ -39,30 +39,4 @@ public class Node {
         return super.equals(obj);
     }
 
-    public static ISerializer<Node> serializer = new ISerializer<>() {
-
-        @Override
-        public void serialize(Node t, ByteBuf out) throws IOException {
-            Host.serializer.serialize(t.getHost(), out);
-            
-            byte[] objId = t.getNodeId().toByteArray();
-            out.writeInt(objId.length);
-            if (objId.length > 0) {
-                out.writeBytes(objId);
-            }
-        }
-
-        @Override
-        public Node deserialize(ByteBuf in) throws IOException {
-            Host host = Host.serializer.deserialize(in);
-            int size = in.readInt();
-            byte[] objIdArr = new byte[size];
-            if (size > 0)
-                in.readBytes(objIdArr);
-            BigInteger nodeId = new BigInteger(objIdArr);
-
-            return new Node(host, nodeId);
-        }
-    };
-
 }
