@@ -41,8 +41,7 @@ public class Storage extends GenericProtocol {
     private final Map<UUID, Operation> context;
 
     private Set<Host> connections;
-
-
+    
     private boolean channelReady;
 
     public Storage(Properties props, Host myself) throws IOException, HandlerRegistrationException {
