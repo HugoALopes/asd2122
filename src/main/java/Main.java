@@ -8,6 +8,7 @@ import org.apache.logging.log4j.Logger;
 import protocols.apps.AutomatedApplication;
 import protocols.broadcast.ProbReliableBroadcast;
 import protocols.dht.kademlia.Kademlia;
+import protocols.dht.kelips.Kelips;
 import protocols.storage.Storage;
 import pt.unl.fct.di.novasys.babel.core.Babel;
 import pt.unl.fct.di.novasys.network.data.Host;
@@ -35,7 +36,7 @@ public class Main {
         //Loads properties from the configuration file, and merges them with properties passed in the launch arguments
         Properties props = Babel.loadConfig(args, DEFAULT_CONF);
         props.setProperty("prepare_time", "5");
-        props.setProperty("contact", "192.168.1.3:10000");
+        props.setProperty("contact", "192.168.1.6:10000");
 
         //If you pass an interface name in the properties (either file or arguments), this wil get the IP of that interface
         //and create a property "address=ip" to be used later by the channels.
@@ -53,8 +54,8 @@ public class Main {
         // Storage Protocol
         Storage storage = new Storage(props,myself);
         // DHT Protocol
-        //Kelips dht = new Kelips(myself, props);
-        Kademlia dht = new Kademlia(myself, props);
+        Kelips dht = new Kelips(myself, props);
+        //Kademlia dht = new Kademlia(myself, props);
 
         //Gossip
         ProbReliableBroadcast gossip = new ProbReliableBroadcast(props, myself);
