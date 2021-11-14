@@ -1,4 +1,5 @@
 import java.net.InetAddress;
+import java.util.Arrays;
 import java.util.Properties;
 
 import org.apache.logging.log4j.LogManager;
@@ -65,7 +66,7 @@ public class Main {
         /** You need to uncomment the next two lines when you have protocols to fill those gaps **/
         babel.registerProtocol(storage);
         babel.registerProtocol(dht);
-        babel.registerProtocol(gossip);
+        //babel.registerProtocol(gossip);
 
         //Init the protocols. This should be done after creating all protocols, since there can be inter-protocol
         //communications in this step

@@ -1,5 +1,6 @@
 package protocols.dht.kelips;
 
+import membership.common.NeighbourUp;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -12,6 +13,7 @@ import protocols.dht.kelips.messages.*;
 import protocols.dht.replies.LookupResponse;
 import protocols.dht.requests.LookupRequest;
 import protocols.storage.Storage;
+import protocols.storage.replies.RetrieveFailedReply;
 import protocols.timers.*;
 import pt.unl.fct.di.novasys.babel.core.GenericProtocol;
 import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
@@ -206,9 +208,9 @@ public class Kelips extends GenericProtocol {
     private void uponOutConnectionUp(OutConnectionUp event, int channelId) {
         logger.info("In uponOutConnectionUp");
         Host peer = event.getNode();
-        triggerNotification(new NeighbourDown(peer));
+        triggerNotification(new NeighbourUp(peer));
         Set<Reason> reasons = pending.remove(peer);
-        logger.debug("Out Connection to {} is up.", peer);
+        logger.info("Out Connection to {} is up.", peer);
         if (reasons != null) {
             for (Reason reason : reasons) {
                 switch (reason) {
@@ -397,7 +399,7 @@ public class Kelips extends GenericProtocol {
         int fAG = lookupRequest.getObjID().mod(BigInteger.valueOf(agNum)).intValueExact();
         Host host;
         List<Host> hostList = new ArrayList<>();
-        logger.info("In Upon Lookup");
+        logger.info("{} In Upon Lookup {}",myAG,fAG);
 
         if (fAG == myAG) {
             //opType - True if insert/Put; False if retrieve/Get
