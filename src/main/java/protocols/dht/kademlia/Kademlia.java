@@ -139,8 +139,14 @@ public class Kademlia extends GenericProtocol {
             List<Node> kclosest = query.getKclosest();
             for (Node n : kclosest) {
                 if (!query.alreadyQueried(n) && !query.stillOngoing(n)) { // ainda não contactei com este no
+                    KademliaFindNodeRequest req = new KademliaFindNodeRequest(msg.getUid(), idToFind, my_node, n);
                     query.sendFindNodeRequest(n);
-                    sendMessage(new KademliaFindNodeRequest(msg.getUid(), idToFind, my_node), n.getHost());
+                    if(conections.contains(n)) //ja tenho conexao
+                        sendMessage(req , n.getHost());
+                    else {
+                        waitingForConection.add(req);
+                        openConnection(n.getHost());
+                    }
                 }
             }
         }
@@ -160,8 +166,10 @@ public class Kademlia extends GenericProtocol {
         Node n = new Node(peer, HashGenerator.generateHash(peer.toString()));
         conections.add(n);
 
-        for (KademliaFindNodeRequest req: waitingForConection)
-            sendMessage(req, peer);
+        for (KademliaFindNodeRequest req: waitingForConection){
+            if(req.getDest().equals(n))
+                sendMessage(req, peer);
+        }       
     }
 
     private void uponOutConnectionDown(OutConnectionDown event, int channelId) {
@@ -259,10 +267,10 @@ public class Kademlia extends GenericProtocol {
             for (int i = 0; i < alfa && i < kclosest.size(); i++) {
                 Node n = kclosest.get(i);
                 if (!n.equals(my_node)) {
-                    KademliaFindNodeRequest msg = new KademliaFindNodeRequest(mid, id, my_node);
-                    query.sendFindNodeRequest(kclosest.get(i));
+                    KademliaFindNodeRequest msg = new KademliaFindNodeRequest(mid, id, my_node, n);
+                    query.sendFindNodeRequest(n);
                     if(conections.contains(n)) //ja tenho conexao
-                        sendMessage(msg , kclosest.get(i).getHost());
+                        sendMessage(msg , n.getHost());
                     else {
                         waitingForConection.add(msg);
                         openConnection(n.getHost());

@@ -15,12 +15,14 @@ public class KademliaFindNodeRequest extends ProtoMessage{
     private UUID uid;
     private BigInteger idToFind;
     private Node sender;
+    private Node dest;
 	
-	public KademliaFindNodeRequest(UUID mid, BigInteger nodeToFind, Node sender) {
+	public KademliaFindNodeRequest(UUID mid, BigInteger nodeToFind, Node sender, Node dest) {
 		super(MESSAGE_ID);
 		this.uid = mid;
         this.idToFind = nodeToFind;
         this.sender = sender;
+        this.dest = dest;
 	}
 
     public UUID getUid(){
@@ -33,6 +35,10 @@ public class KademliaFindNodeRequest extends ProtoMessage{
 
     public Node getSender(){
         return sender;
+    }
+
+    public Node getDest(){
+        return dest;
     }
 
     public static ISerializer<KademliaFindNodeRequest> serializer = new ISerializer<>() {
@@ -48,6 +54,7 @@ public class KademliaFindNodeRequest extends ProtoMessage{
             }
 
             Node.serializer.serialize(message.getSender(), out);
+            Node.serializer.serialize(message.getDest(), out);
 
             out.writeShort(message.getId());
         }
@@ -63,8 +70,9 @@ public class KademliaFindNodeRequest extends ProtoMessage{
                 in.readBytes(objIdArr);
             BigInteger nodeToFind = new BigInteger(objIdArr);
             Node sender = Node.serializer.deserialize(in);
+            Node dest = Node.serializer.deserialize(in);
 
-            return new KademliaFindNodeRequest(mid, nodeToFind, sender);
+            return new KademliaFindNodeRequest(mid, nodeToFind, sender, dest);
         }
     };
 }
