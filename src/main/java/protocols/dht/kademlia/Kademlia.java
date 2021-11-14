@@ -54,7 +54,7 @@ public class Kademlia extends GenericProtocol {
         channelProps.setProperty(TCPChannel.PORT_KEY, props.getProperty("port")); // The port to bind to
         channelProps.setProperty(TCPChannel.METRICS_INTERVAL_KEY, cMetricsInterval); // The interval to receive channel
                                                                                      // metrics
-        channelProps.setProperty(TCPChannel.HEARTBEAT_INTERVAL_KEY, "1000"); // Heartbeats interval for established
+        channelProps.setProperty(TCPChannel.HEARTBEAT_INTERVAL_KEY, "3000"); // Heartbeats interval for established
                                                                              // connections
         channelProps.setProperty(TCPChannel.HEARTBEAT_TOLERANCE_KEY, "3000"); // Time passed without heartbeats until
                                                                               // closing a connection
@@ -84,22 +84,22 @@ public class Kademlia extends GenericProtocol {
     @Override
     public void init(Properties properties) throws HandlerRegistrationException, IOException {
         triggerNotification(new ChannelCreated(channelId));
-        if (properties.containsKey("contact")) {
-            logger.info("Contains contact");
+        String contact = properties.getProperty("contact");
+        if (contact == "null") {
             try {
-                String contact = properties.getProperty("contact");
                 String[] hostElems = contact.split(":");
                 Host contactHost = new Host(InetAddress.getByName(hostElems[0]), Short.parseShort(hostElems[1]));
                 openConnection(contactHost);
-                logger.info("Contains contact");
-                Bucket b = new Bucket(new BigInteger("0"), new BigInteger("0"));
-                b.addNode(my_node);
             } catch (Exception e) {
                 logger.error("Invalid contact on configuration: '" + properties.getProperty("contact"));
                 System.exit(-1);
             }
         }
-        logger.info("Nao Contains contact");
+        
+        Bucket b = new Bucket(new BigInteger("0"), BigInteger.ZERO.setBit(160).subtract(BigInteger.ONE));
+        b.addNode(my_node);
+        k_buckets_list.add(b);
+       
     }
 
     /* --------------------------------- Messages ---------------------------- */
@@ -213,9 +213,10 @@ public class Kademlia extends GenericProtocol {
         BigInteger distance = calculate_dist(node_id, my_node.getNodeId());
         
         List<Node> closest_nodes = new ArrayList<Node>(k); 
-        
+
         Bucket b = getBucket(distance);
-        for(Node n: b.getNodes()){
+        List<Node> nodes = b.getNodes();
+        for(Node n: nodes){
             closest_nodes.add(n);
         }
   
@@ -236,21 +237,24 @@ public class Kademlia extends GenericProtocol {
 
     private void node_lookup(BigInteger id, UUID mid) {
         List<Node> kclosest = find_node(id); // list containing the k closest nodes
-//        logger.info("pre null pointer: {}", kclosest.size());
+        // logger.info("pre null pointer: {}", kclosest.size());
         QueryState query = new QueryState(kclosest);
 
-        for (int i = 0; i < alfa && i < kclosest.size(); i++) {
-            query.sendFindNodeRequest(kclosest.get(i));
-            sendMessage(new KademliaFindNodeRequest(mid, id, my_node), kclosest.get(i).getHost());
-        }
-
-      /*  if (kclosest.size() == 0) {
-            ArrayList<Host> myHost = new ArrayList<Host>();
-            myHost.add(this.my_node.getHost());
+        if(kclosest.size() == 1 && kclosest.get(0).equals(my_node)){
+            ArrayList<Host> myHost = new ArrayList<>();
+            myHost.add(my_node.getHost());
             sendReply(new LookupResponse(mid, id, myHost), Storage.PROTOCOL_ID);
-        }*/
-
-        queriesByIdToFind.put(id, query);
+        } else {
+            for (int i = 0; i < alfa && i < kclosest.size(); i++) {
+                if (!kclosest.get(i).equals(my_node)) {
+                    query.sendFindNodeRequest(kclosest.get(i));
+                    sendMessage(new KademliaFindNodeRequest(mid, id, my_node), kclosest.get(i).getHost());
+                }
+    
+            }
+    
+            queriesByIdToFind.put(id, query);
+        }   
     }
 
     private BigInteger calculate_dist(BigInteger node1, BigInteger node2) {
@@ -260,8 +264,11 @@ public class Kademlia extends GenericProtocol {
     private Bucket getBucket(BigInteger dist){
         for(Bucket b: k_buckets_list){
             if((dist.compareTo(b.getMax()) == -1 && dist.compareTo(b.getMin()) == 1) 
-                || dist.compareTo(b.getMin()) == 0 || dist.compareTo(b.getMin()) == 0)
-                return b;
+                || dist.compareTo(b.getMin()) == 0 || dist.compareTo(b.getMax()) == 0){
+                	
+               	return b;
+                }	
+            
         }
         
         return null;

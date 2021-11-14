@@ -4,11 +4,9 @@ import java.util.Properties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-
 import protocols.apps.AutomatedApplication;
 import protocols.broadcast.ProbReliableBroadcast;
 import protocols.dht.kademlia.Kademlia;
-import protocols.dht.kelips.*;
 import protocols.storage.Storage;
 import pt.unl.fct.di.novasys.babel.core.Babel;
 import pt.unl.fct.di.novasys.network.data.Host;
@@ -54,8 +52,8 @@ public class Main {
         // Storage Protocol
         Storage storage = new Storage(props,myself);
         // DHT Protocol
-        Kelips dht = new Kelips(myself, props);
-        //Kademlia dht = new Kademlia(myself, props);
+        //Kelips dht = new Kelips(myself, props);
+        Kademlia dht = new Kademlia(myself, props);
 
         //Gossip
         ProbReliableBroadcast gossip = new ProbReliableBroadcast(props, myself);
@@ -75,7 +73,7 @@ public class Main {
        
         //gossip.init(props);
 
-	    dht.init(props);
+	dht.init(props);
 
         //Start babel and protocol threads
         babel.start();

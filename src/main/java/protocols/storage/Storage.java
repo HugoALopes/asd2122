@@ -12,7 +12,6 @@ import protocols.timers.CacheDeleteTimer;
 import pt.unl.fct.di.novasys.babel.core.GenericProtocol;
 import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
-import pt.unl.fct.di.novasys.channel.tcp.events.*;
 import pt.unl.fct.di.novasys.network.data.Host;
 
 import java.io.IOException;
@@ -29,7 +28,7 @@ public class Storage extends GenericProtocol {
     // Protocol information, to register in babel
     public static final String PROTOCOL_NAME = "Store";
     public static final short PROTOCOL_ID = 200;
-    public static final short DHT_PROTOCOL = 100;
+    public static final short DHT_PROTOCOL = 1100;
     public static final short APP_PROTOCOL = 300;
 
     private static final int CACHE_TIMEOUT = 50000;
@@ -75,7 +74,7 @@ public class Storage extends GenericProtocol {
     public void init(Properties props) {
 
         // setup timer to delete cache
-        setupPeriodicTimer(new CacheDeleteTimer(), CACHE_TIMEOUT, CACHE_TIMEOUT);
+        //setupPeriodicTimer(new CacheDeleteTimer(), CACHE_TIMEOUT, CACHE_TIMEOUT);
     }
 
     // Upon receiving the channelId from the membership, register our own callbacks
@@ -121,6 +120,10 @@ public class Storage extends GenericProtocol {
             return;
 
         BigInteger id = generateHash(request.getName());
+        if(id.signum() == -1){
+        	id = id.negate();
+        }
+       
         byte[] content = request.getContent();
         cache.put(id, new CacheContent(LocalDateTime.now(), content));
 
@@ -132,6 +135,11 @@ public class Storage extends GenericProtocol {
             return;
 
         BigInteger id = generateHash(request.getName());
+        if(id.signum() == -1){
+        	id = id.negate();
+        }
+       
+        
         byte[] content = (cache.get(id) == null) ? store.get(id) : cache.get(id).getContent();
 
         if (content == null) {
@@ -150,13 +158,7 @@ public class Storage extends GenericProtocol {
         List<Host> hostList = response.getHost();
         context.get(contID).setHostList(hostList);
 
-        for (Host h : hostList) {
-            if (!connections.contains(h)) {
-                openConnection(h);
-                connections.add(h);
-            }
-        }
-
+    
         if (context.get(contID).getOpType()) { //True if insert/Put; False if retrieve/Get
             byte[] content = cache.get(response.getObjId()).getContent();
 
@@ -165,17 +167,30 @@ public class Storage extends GenericProtocol {
                     store.put(response.getObjId(), content);
                     sendReply(new StoreOKReply(context.get(contID).getName(), contID), APP_PROTOCOL);
                 }
-            });
-
-            hostList.forEach(host -> {
-                SaveMessage requestMsg = new SaveMessage(contID, response.getObjId(), host, content);
-                sendMessage(requestMsg, host);
+                else{
+                	SaveMessage requestMsg = new SaveMessage(contID, response.getObjId(), host, content);
+                	openConnection(host);
+                	sendMessage(requestMsg, host);
+                }
             });
 
         } else {
-            Host host = context.get(contID).getHost();
-            GetMessage getMsg = new GetMessage(contID, context.get(contID).getId());
-            sendMessage(getMsg, host);
+            byte[] content = (cache.get(response.getObjId()) == null) ? store.get(response.getObjId()) : cache.get(response.getObjId()).getContent();
+            
+            Operation op = context.get(contID);
+            Host host = op.getHost();
+            
+            if(host.equals(me)){
+            	sendReply(new RetrieveOKReply(op.getName(), contID, content), APP_PROTOCOL);
+            }
+            else{
+            	 GetMessage getMsg = new GetMessage(contID, context.get(contID).getId());
+            	 openConnection(host);
+            	 sendMessage(getMsg, host);
+            }
+           
+           
+
         }
     }
 

@@ -1,11 +1,14 @@
 package protocols.dht.kademlia.messages;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.UUID;
 
+import io.netty.buffer.ByteBuf;
 import protocols.dht.kademlia.Node;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
+import pt.unl.fct.di.novasys.network.ISerializer;
 
 public class KademliaFindNodeReply extends ProtoMessage {
     public final static short MESSAGE_ID = 1132;
@@ -38,4 +41,5 @@ public class KademliaFindNodeReply extends ProtoMessage {
     public Node getSender(){
         return sender;
     }
+
 }
