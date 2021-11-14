@@ -15,7 +15,6 @@ protocols/storage/messages/ThereYouGoMessage$1.class
 protocols/broadcast/messages/FloodMessage$1.class
 protocols/dht/kelips/messages/GetFileMessage$1.class
 protocols/dht/kelips/messages/GetDiffAgFileMessage$1.class
-protocols/dht/kelips/Kelips$1.class
 protocols/apps/AutomatedApplication.class
 protocols/storage/messages/SaveMessage.class
 protocols/dht/kelips/messages/KelipsInformRequest.class
