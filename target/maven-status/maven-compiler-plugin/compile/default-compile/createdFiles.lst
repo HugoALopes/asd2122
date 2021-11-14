@@ -6,6 +6,7 @@ protocols/dht/kelips/messages/KelipsJoinReply.class
 protocols/storage/messages/GetMessage.class
 protocols/storage/requests/RetrieveRequest.class
 utils/NodeToHostList.class
+protocols/dht/kademlia/Bucket.class
 membership/common/ChannelCreated.class
 utils/Serializer.class
 protocols/storage/Storage.class

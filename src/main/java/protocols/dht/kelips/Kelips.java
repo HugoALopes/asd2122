@@ -1,5 +1,9 @@
 package protocols.dht.kelips;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.EmptyByteBuf;
+import membership.common.NeighbourUp;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -12,6 +16,7 @@ import protocols.dht.kelips.messages.*;
 import protocols.dht.replies.LookupResponse;
 import protocols.dht.requests.LookupRequest;
 import protocols.storage.Storage;
+import protocols.storage.replies.RetrieveFailedReply;
 import protocols.timers.*;
 import pt.unl.fct.di.novasys.babel.core.GenericProtocol;
 import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
@@ -138,13 +143,14 @@ public class Kelips extends GenericProtocol {
         if (properties.containsKey("contact")) {
             try {
                 String contact = properties.getProperty("contact");
-                logger.info("{} ->{} is contact",me, contact);
+                logger.info("{} -> {} is contact",me, contact);
                 String[] hostElems = contact.split(":");
                 Host contactHost = new Host(InetAddress.getByName(hostElems[0]), Short.parseShort(hostElems[1]));
                 if (contactHost.equals(me)) {
                     agView.add(me);
                     return;
                 }
+                logger.info("{} -> call NEW_JOIN",me, contact);
                 connect(contactHost, Reason.NEW_JOIN);
             } catch (Exception e) {
                 logger.error("Invalid contact on configuration: '" + properties.getProperty("contact"));
@@ -163,7 +169,10 @@ public class Kelips extends GenericProtocol {
         BigInteger hash = HashGenerator.generateHash(sender.toString());
         int fromID = (hash.intValue() % this.agNum);
 
-        InformationGossip ig = Serializer.deserialize(not.getMsg());
+        ByteBuf buf = new EmptyByteBuf(ByteBufAllocator.DEFAULT);
+        buf.writeBytes(not.getMsg());
+        //TODO - FIX
+        InformationGossip ig = Serializer.deserialize(buf);
         Map<Integer, Set<Host>> contactsIG = ig.getContacts();
         Set<Host> view = ig.getAgView();
 
@@ -204,20 +213,28 @@ public class Kelips extends GenericProtocol {
     /*--------------------------------- TCP ---------------------------------------- */
     // If a connection is successfully established, this event is triggered.
     private void uponOutConnectionUp(OutConnectionUp event, int channelId) {
-        logger.info("In uponOutConnectionUp");
+        logger.info("{} -> In uponOutConnectionUp",me);
         Host peer = event.getNode();
-        triggerNotification(new NeighbourDown(peer));
+        triggerNotification(new NeighbourUp(peer));
         Set<Reason> reasons = pending.remove(peer);
-        logger.debug("Out Connection to {} is up.", peer);
+        logger.info("{} -> Out Connection to {} is up.",me, peer);
         if (reasons != null) {
             for (Reason reason : reasons) {
                 switch (reason) {
                     case NEW_JOIN: // SEND JOIN REQUEST DE UM NOVO NO
                         sendMessage(new KelipsJoinRequest(this.me), peer);
+                        logger.info("{} -> New Noin request to {}",me, peer);
                         break;
                     case JOIN: //QUANDO UM NO RECEBE UM JOIN REQUEST ENVIA A SUA VIEW E A SI MESMO
-                        KelipsJoinReply reply = new KelipsJoinReply(this.me, contacts, this.filetuples, this.agView);
+                        int peerAG = generateHash(peer.toString()).mod(BigInteger.valueOf(agNum)).intValueExact();
+                        KelipsJoinReply reply;
+                        if (peerAG == myAG) {
+                            return;
+                        } else {
+                            reply = new KelipsJoinReply(this.me, contacts, this.filetuples, this.agView);
+                        }
                         sendMessage(reply, peer);
+                        logger.info("{} -> Join reply to {}",me,peer);
                         break;
                     case INFORM: //DAR O NOVO NO A CONHECER AOS RESTANTES
                         KelipsInformRequest msg = new KelipsInformRequest();
@@ -235,7 +252,7 @@ public class Kelips extends GenericProtocol {
 
     private void uponOutConnectionDown(OutConnectionDown event, int channelId) {
         Host peer = event.getNode();
-        logger.info("Out Connection to {} is down cause {}", peer, event.getCause());
+        logger.info("{} -> Out Connection to {} is down cause {}",me, peer, event.getCause());
 
         BigInteger hash = HashGenerator.generateHash(peer.toString());
         int fromID = hash.mod(BigInteger.valueOf(this.agNum)).intValueExact();
@@ -244,7 +261,7 @@ public class Kelips extends GenericProtocol {
 
     private void uponOutConnectionFailed(OutConnectionFailed<ProtoMessage> event, int channelId) {
         Host peer = event.getNode();
-        logger.info("Connection to {} failed cause: {}", peer, event.getCause());
+        logger.info("{} -> Connection to {} failed cause: {}",me, peer, event.getCause());
 
         BigInteger hash = HashGenerator.generateHash(peer.toString());
         int fromID = hash.mod(BigInteger.valueOf(this.agNum)).intValueExact();
@@ -253,7 +270,7 @@ public class Kelips extends GenericProtocol {
 
     private void uponInConnectionUp(InConnectionUp event, int channelId) {
         Host peer = event.getNode();
-        logger.debug("In Connection from {} is up", peer);
+        logger.debug("{} -> In Connection from {} is up",me, peer);
     }
 
     //A connection someone established to me is disconnected.
@@ -263,7 +280,7 @@ public class Kelips extends GenericProtocol {
 
         BigInteger hash = HashGenerator.generateHash(peer.toString());
         int fromID = hash.mod(BigInteger.valueOf(this.agNum)).intValueExact();
-        logger.info(contacts.toString());
+        logger.info("{} -> contact list {}",me ,contacts.toString());
         this.removeContact(fromID, peer);
     }
 
@@ -284,7 +301,7 @@ public class Kelips extends GenericProtocol {
     }
 
     private void uponJoinReplyMessage(KelipsJoinReply msg, Host from, short sourceProto, int channelId) {
-
+        logger.info("{} -> in Upon Join Reply",me);
         Host c = null;
         if (!msg.getContacts().containsKey(this.myAG)) {
             this.agView = msg.getAgView();
@@ -320,6 +337,7 @@ public class Kelips extends GenericProtocol {
             }
             aux.add(from);
             contacts.put(fromID, aux);
+            logger.info("{} -> contacts {} added to Contacts",me, aux);
         }
         connect(from, Reason.JOIN);
     }
@@ -397,7 +415,7 @@ public class Kelips extends GenericProtocol {
         int fAG = lookupRequest.getObjID().mod(BigInteger.valueOf(agNum)).intValueExact();
         Host host;
         List<Host> hostList = new ArrayList<>();
-        logger.info("In Upon Lookup");
+        logger.info("{} -> {} In Upon Lookup {}",me,myAG,fAG);
 
         if (fAG == myAG) {
             //opType - True if insert/Put; False if retrieve/Get
@@ -537,7 +555,7 @@ public class Kelips extends GenericProtocol {
 
     @SuppressWarnings("DuplicatedCode")
     private void removeContact(int fromID, Host peer) {
-        logger.info("In remove Contact");
+        logger.info("{} -> In remove Contact",me);
         if (fromID == myAG) {
             agView.removeIf(n -> n.equals(peer));
 
