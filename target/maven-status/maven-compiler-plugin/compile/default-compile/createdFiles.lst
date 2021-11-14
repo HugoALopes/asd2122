@@ -3,6 +3,7 @@ protocols/storage/CacheContent.class
 protocols/dht/kelips/messages/GetFileReply.class
 protocols/storage/messages/SaveMessage$1.class
 protocols/dht/kelips/messages/KelipsJoinReply.class
+protocols/dht/kademlia/messages/KademliaFindNodeReply$1.class
 protocols/storage/messages/GetMessage.class
 protocols/storage/requests/RetrieveRequest.class
 utils/NodeToHostList.class
@@ -28,6 +29,7 @@ protocols/timers/BroadcastTimer.class
 protocols/dht/kelips/messages/KelipsInformRequest$1.class
 membership/common/NeighbourDown.class
 utils/LatencyGenerator.class
+protocols/storage/messages/NoFileInHostMessage$1.class
 protocols/storage/replies/StoreOKReply.class
 protocols/broadcast/common/BroadcastRequest.class
 utils/Reason.class
@@ -37,6 +39,7 @@ protocols/apps/timers/ExitTimer.class
 protocols/timers/GossipTimer.class
 protocols/broadcast/FloodBroadcast.class
 protocols/dht/kademlia/QueryState.class
+protocols/dht/kademlia/messages/KademliaJoinRequest$1.class
 protocols/dht/requests/LookupRequest.class
 protocols/apps/timers/StartTimer.class
 protocols/apps/timers/StopTimer.class
@@ -47,6 +50,7 @@ protocols/storage/messages/ThereYouGoMessage.class
 protocols/dht/kelips/Kelips$Reason.class
 protocols/dht/kademlia/Kademlia.class
 protocols/dht/kelips/messages/KelipsJoinRequest$1.class
+protocols/dht/kademlia/messages/KademliaFindNodeRequest$1.class
 protocols/storage/requests/StoreRequest.class
 protocols/dht/kademlia/Node.class
 protocols/dht/kelips/messages/InformationGossip.class
@@ -59,8 +63,10 @@ channel/notifications/ChannelCreated.class
 utils/InterfaceToIp.class
 protocols/dht/kelips/messages/GetDiffAgFileMessage.class
 protocols/storage/messages/SuccessSaveMessage.class
+protocols/dht/kademlia/Node$1.class
 protocols/dht/kademlia/messages/KademliaFindNodeReply.class
 protocols/storage/replies/RetrieveOKReply.class
+protocols/storage/messages/NoFileInHostMessage.class
 protocols/dht/kelips/messages/GetFileMessage.class
 protocols/broadcast/messages/FloodMessage.class
 protocols/dht/kelips/messages/KelipsJoinReply$1.class

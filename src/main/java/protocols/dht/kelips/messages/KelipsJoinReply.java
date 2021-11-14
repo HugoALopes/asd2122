@@ -61,7 +61,7 @@ public class KelipsJoinReply extends ProtoMessage {
             out.writeLong(msg.uid.getLeastSignificantBits());
             Host.serializer.serialize(msg.getSender(), out);
 
-            logger.info("kelips Join Reply Serializer before ser -> {}", msg.fileTuples);
+            logger.debug("kelips Join Reply Serializer before ser -> {}", msg.fileTuples);
             InformationGossip auxMsg = new InformationGossip(msg.contacts, msg.fileTuples, msg.agView);
 
             Serializer.serialize(auxMsg, out);
