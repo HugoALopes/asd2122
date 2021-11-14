@@ -34,8 +34,8 @@ public class Node {
         if(obj == null) return false;
         
         Node obj_aux = (Node) obj;
-        if(obj_aux == this) return true;
-        if(obj_aux.getHost().equals(obj)) return true;
+
+        if(obj_aux.getNodeId().equals(this.nodeId)) return true;
         return super.equals(obj);
     }
 

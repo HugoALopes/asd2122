@@ -109,7 +109,6 @@ public class Kademlia extends GenericProtocol {
         k_buckets_list.add(b);
         
         if(contactHost != null  && !contactHost.equals(my_node.getHost())){
-       
         	insert_on_k_bucket(new Node(contactHost, HashGenerator.generateHash(contactHost.toString()))); 
         	this.node_lookup(my_node.getNodeId(), null);
 
@@ -123,7 +122,6 @@ public class Kademlia extends GenericProtocol {
     }
 
     private void uponFindNode(KademliaFindNodeRequest msg, Host host, short destProto, int channelId) {
-      	logger.info("ola");
         List<Node> closest_nodes = find_node(msg.getIdToFind());
         insert_on_k_bucket(msg.getSender());
         KademliaFindNodeReply reply = new KademliaFindNodeReply(msg.getUid(), closest_nodes, msg.getIdToFind(),
@@ -133,6 +131,7 @@ public class Kademlia extends GenericProtocol {
         } //ja tenho conexao
                     
         else {
+         	
         	waitingForConectionReply.add(reply);
        	openConnection(host);
         }
@@ -146,7 +145,7 @@ public class Kademlia extends GenericProtocol {
         query.receivedFindNodeReply(msg.getSender());
 
         List<Node> kclosestReturned = msg.getClosestNodes();
-        for (int i = 0; i < k; i++) {
+        for (int i = 0; i < k && i < kclosestReturned.size(); i++) {
             insert_on_k_bucket(kclosestReturned.get(i));
             query.updateKclosest(kclosestReturned.get(i), idToFind);
         }
@@ -182,16 +181,15 @@ public class Kademlia extends GenericProtocol {
     // If a connection is successfully established, this event is triggered.
     private void uponOutConnectionUp(OutConnectionUp event, int channelId) {
         Host peer = event.getNode();
-        logger.info("Out Connection to {} from {} is up.", peer, my_node.getHost());
+        
         Node n = new Node(peer, HashGenerator.generateHash(peer.toString()));
         conections.add(n);
+      	logger.info("Out Connection to {} from {} is up. {}", peer, my_node.getHost(), conections.size());
 	
 	List<KademliaFindNodeRequest> aux = new ArrayList<>();
         for (KademliaFindNodeRequest req: waitingForConection){
-            if(req.getDest().equals(n)){
-            
+            if(req.getDest().getNodeId().equals(n.getNodeId())){
             	sendMessage(req, peer);
-            	logger.info("orinto " + peer + my_node.getHost());
             	aux.add(req);
             }   
         }
@@ -250,10 +248,8 @@ public class Kademlia extends GenericProtocol {
         ArrayList<Node> hosts = insert_bucket.getNodes();
         if(hosts.size() > k  && hosts.contains(my_node)){
             this.divideBucket(insert_bucket);
-            logger.info("k_bucket divided.");
         }
         
-        logger.info("Node added.");
     }
 
     private void remove_from_k_bucket(Node node) {
@@ -309,7 +305,10 @@ public class Kademlia extends GenericProtocol {
 
                     KademliaFindNodeRequest msg = new KademliaFindNodeRequest(mid, id, my_node, n);
                     query.sendFindNodeRequest(n);
-                    logger.info(conections.contains(n) + " " + n.getHost());
+                    
+                 
+                  	
+                    	
                     if(conections.contains(n)){
                     	 sendMessage(msg , n.getHost());
 			

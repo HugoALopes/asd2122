@@ -28,7 +28,7 @@ public class Storage extends GenericProtocol {
     // Protocol information, to register in babel
     public static final String PROTOCOL_NAME = "Store";
     public static final short PROTOCOL_ID = 200;
-    public static final short DHT_PROTOCOL = 100;
+    public static final short DHT_PROTOCOL = 1100;
     public static final short APP_PROTOCOL = 300;
 
     private static final int CACHE_TIMEOUT = 50000;
@@ -157,6 +157,7 @@ public class Storage extends GenericProtocol {
     /*--------------------------------- Replies ---------------------------------------- */
     @SuppressWarnings("UnnecessaryLocalVariable")
     private void uponLookupResponse(LookupResponse response, short sourceProto) {
+        logger.info("Resquest lookup");
         UUID contID = response.getMid(); //TODO - remove when uuid in response done
         List<Host> hostList = response.getHost();
         context.get(contID).setHostList(hostList);
@@ -207,7 +208,7 @@ public class Storage extends GenericProtocol {
 	    }
 	      
             GetMessage getMsg = new GetMessage(msg.getUid(), context.get(msg.getUid()).getId());
-            openConnection(h);
+            //openConnection(h);
             sendMessage(getMsg, h);
         } else {
             sendReply(new RetrieveFailedReply(context.get(msg.getUid()).getName(), msg.getUid()), APP_PROTOCOL);

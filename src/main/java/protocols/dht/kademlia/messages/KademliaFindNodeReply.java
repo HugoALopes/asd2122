@@ -59,8 +59,13 @@ public class KademliaFindNodeReply extends ProtoMessage {
     public static ISerializer<KademliaFindNodeReply> serializer = new ISerializer<>() {
         @Override
         public void serialize(KademliaFindNodeReply msg, ByteBuf out) throws IOException {
-            out.writeLong(msg.getUid().getMostSignificantBits());
-            out.writeLong(msg.getUid().getLeastSignificantBits());
+           if(msg.uid == null){
+ 	    	out.writeInt(-1);
+ 	    } else{
+ 	    	out.writeInt(0);
+ 	    	out.writeLong(msg.uid.getMostSignificantBits());
+            	out.writeLong(msg.uid.getLeastSignificantBits());
+ 	    }
             out.writeBytes(msg.getSender().getHost().getAddress().getAddress());
             out.writeShort(msg.getSender().getHost().getPort());
             byte[] nodeId = msg.getSender().getNodeId().toByteArray();
@@ -75,13 +80,13 @@ public class KademliaFindNodeReply extends ProtoMessage {
                 out.writeBytes(objId);
             }
 
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(bos);
-            oos.writeObject(msg.getClosestNodes());
-            byte[] bytes = bos.toByteArray();
-            out.writeInt(bytes.length);
-            if (bytes.length > 0) {
-                out.writeBytes(bytes);
+            out.writeInt(msg.getClosestNodes().size());
+            for (Node n: msg.getClosestNodes()){
+                nodeId = n.getNodeId().toByteArray();
+                out.writeInt(nodeId.length);
+                if (nodeId.length > 0) {
+                    out.writeBytes(nodeId);
+                }
             }
 
             out.writeBytes(msg.getDest().getAddress().getAddress());
@@ -92,9 +97,14 @@ public class KademliaFindNodeReply extends ProtoMessage {
 
         @Override
         public KademliaFindNodeReply deserialize(ByteBuf in) throws IOException {
-            long firstLong = in.readLong();
-            long secondLong = in.readLong();
-            UUID mid = new UUID(firstLong, secondLong);
+            int hasmid = in.readInt();
+            UUID mid = null;
+            if(hasmid == 0){	
+            	long firstLong = in.readLong();
+            	long secondLong = in.readLong();
+            	mid = new UUID(firstLong, secondLong);
+            }
+            
             byte[] addrBytes = new byte[4];
             in.readBytes(addrBytes);
             int port = in.readShort() & '\uffff';
@@ -112,14 +122,15 @@ public class KademliaFindNodeReply extends ProtoMessage {
             BigInteger nodeToFind = new BigInteger(objIdArr);
 
             size = in.readInt();
-            byte[] arr = new byte[size];
-            in.duplicate().readBytes(arr);
-            List<Node> list = null;
-
-            try {
-                list = (ArrayList<Node>) new ObjectInputStream(new ByteArrayInputStream(arr)).readObject();
-            } catch (Exception e) {
-                e.printStackTrace();
+            List<Node> closestNodes = new ArrayList<>(size);
+            for (int i = 0; i < size; i++){
+                int size_aux = in.readInt();
+                nodeId = new byte[size_aux];
+                if (size_aux > 0)
+                    in.readBytes(nodeId);
+                nId = new BigInteger(nodeId);
+                Node aux = new Node(new Host(InetAddress.getByAddress(addrBytes), port), nId);
+                closestNodes.add(aux);
             }
 
             addrBytes = new byte[4];
@@ -127,7 +138,7 @@ public class KademliaFindNodeReply extends ProtoMessage {
             port = in.readShort() & '\uffff';
             Host dest = new Host(InetAddress.getByAddress(addrBytes), port);
 
-            return new KademliaFindNodeReply(mid, list, nodeToFind, node, dest);
+            return new KademliaFindNodeReply(mid, closestNodes, nodeToFind, node, dest);
         }
     };
 

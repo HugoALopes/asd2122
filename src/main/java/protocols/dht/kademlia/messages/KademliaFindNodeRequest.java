@@ -46,9 +46,14 @@ public class KademliaFindNodeRequest extends ProtoMessage{
     public static ISerializer<KademliaFindNodeRequest> serializer = new ISerializer<>() {
         @Override
         public void serialize(KademliaFindNodeRequest message, ByteBuf out) throws IOException {
-            out.writeLong(message.uid.getMostSignificantBits());
-            out.writeLong(message.uid.getLeastSignificantBits());
-           
+            if(message.uid == null){
+ 	    	out.writeInt(-1);
+ 	    } else{
+ 	    	out.writeInt(0);
+ 	    	out.writeLong(message.uid.getMostSignificantBits());
+            	out.writeLong(message.uid.getLeastSignificantBits());
+ 	    }
+                    
             byte[] objId = message.getIdToFind().toByteArray();
             out.writeInt(objId.length);
             if (objId.length > 0) {
@@ -76,9 +81,14 @@ public class KademliaFindNodeRequest extends ProtoMessage{
 
         @Override
         public KademliaFindNodeRequest deserialize(ByteBuf in) throws IOException {
-            long firstLong = in.readLong();
-            long secondLong = in.readLong();
-            UUID mid = new UUID(firstLong, secondLong);
+            int hasmid = in.readInt();
+            UUID mid = null;
+            if(hasmid == 0){	
+            	long firstLong = in.readLong();
+            	long secondLong = in.readLong();
+            	mid = new UUID(firstLong, secondLong);
+            }
+            
             int size = in.readInt();
             byte[] objIdArr = new byte[size];
             if (size > 0)
@@ -109,4 +119,3 @@ public class KademliaFindNodeRequest extends ProtoMessage{
         }
     };
 }
-
