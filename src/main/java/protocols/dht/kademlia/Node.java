@@ -2,6 +2,7 @@ package protocols.dht.kademlia;
 
 import java.math.BigInteger;
 
+import pt.unl.fct.di.novasys.network.ISerializer;
 import pt.unl.fct.di.novasys.network.data.Host;
 
 public class Node {
@@ -35,4 +36,5 @@ public class Node {
         if(obj_aux.getHost().equals(obj)) return true;
         return super.equals(obj);
     }
+
 }
