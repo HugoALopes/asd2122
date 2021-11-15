@@ -15,7 +15,6 @@ protocols/storage/messages/ThereYouGoMessage$1.class
 protocols/broadcast/messages/FloodMessage$1.class
 protocols/dht/kelips/messages/GetFileMessage$1.class
 protocols/dht/kelips/messages/GetDiffAgFileMessage$1.class
-protocols/dht/kelips/Kelips$1.class
 protocols/apps/AutomatedApplication.class
 protocols/storage/messages/SaveMessage.class
 protocols/dht/kelips/messages/KelipsInformRequest.class
@@ -63,7 +62,6 @@ channel/notifications/ChannelCreated.class
 utils/InterfaceToIp.class
 protocols/dht/kelips/messages/GetDiffAgFileMessage.class
 protocols/storage/messages/SuccessSaveMessage.class
-protocols/dht/kademlia/Node$1.class
 protocols/dht/kademlia/messages/KademliaFindNodeReply.class
 protocols/storage/replies/RetrieveOKReply.class
 protocols/storage/messages/NoFileInHostMessage.class

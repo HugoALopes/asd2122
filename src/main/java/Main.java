@@ -1,5 +1,4 @@
 import java.net.InetAddress;
-import java.util.Arrays;
 import java.util.Properties;
 
 import org.apache.logging.log4j.LogManager;
@@ -36,7 +35,6 @@ public class Main {
         //Loads properties from the configuration file, and merges them with properties passed in the launch arguments
         Properties props = Babel.loadConfig(args, DEFAULT_CONF);
         props.setProperty("prepare_time", "5");
-        props.setProperty("contact", "192.168.1.6:10000");
 
         //If you pass an interface name in the properties (either file or arguments), this wil get the IP of that interface
         //and create a property "address=ip" to be used later by the channels.
@@ -46,7 +44,12 @@ public class Main {
         //It implements equals and hashCode, and also includes a serializer that makes it easy to use in network messages
         Host myself =  new Host(InetAddress.getByName(props.getProperty("address")),
                 Integer.parseInt(props.getProperty("port")));
-
+        
+	String contact = props.getProperty("contact");
+	String[] hostElems = contact.split(":");
+	props.setProperty("contact", props.getProperty("address") + ":" + hostElems[1]);
+	 
+	 
         logger.info("Hello, I am {}", myself);
  
         // Application
@@ -65,7 +68,7 @@ public class Main {
         /** You need to uncomment the next two lines when you have protocols to fill those gaps **/
         babel.registerProtocol(storage);
         babel.registerProtocol(dht);
-        //babel.registerProtocol(gossip);
+        babel.registerProtocol(gossip);
 
         //Init the protocols. This should be done after creating all protocols, since there can be inter-protocol
         //communications in this step

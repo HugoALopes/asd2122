@@ -18,7 +18,12 @@ public class SuccessSaveMessage extends ProtoMessage {
 
     public SuccessSaveMessage(UUID uid, String name) {
         super(MSG_ID);
-        this.name=name;
+        //this.name=name;
+        this.mid =uid;
+    }
+
+    public SuccessSaveMessage(UUID uid){
+        super(MSG_ID);
         this.mid =uid;
     }
 
@@ -34,20 +39,30 @@ public class SuccessSaveMessage extends ProtoMessage {
     public static ISerializer<SuccessSaveMessage> serializer = new ISerializer<>() {
         @Override
         public void serialize(SuccessSaveMessage msg, ByteBuf out) throws IOException {
+            try{
             out.writeLong(msg.mid.getMostSignificantBits());
             out.writeLong(msg.mid.getLeastSignificantBits());
-            out.writeBytes(msg.name.getBytes(StandardCharsets.UTF_8));
+            //out.writeBytes(msg.name.getBytes(StandardCharsets.UTF_8));
+            }catch (Exception e){
+                e.printStackTrace(System.out);
+                throw e;
+            }
         }
 
         @Override
         public SuccessSaveMessage deserialize(ByteBuf in) throws IOException {
+            try{
             long firstLong = in.readLong();
             long secondLong = in.readLong();
             UUID mid = new UUID(firstLong, secondLong);
-            String name = in.toString();
+            //String name = in.toString();
 
             //TODO - Check .toString
-            return new SuccessSaveMessage(mid, name);
+            return new SuccessSaveMessage(mid);
+             }catch (Exception e){
+                e.printStackTrace(System.out);
+                throw e;
+            }
         }
     };
 }

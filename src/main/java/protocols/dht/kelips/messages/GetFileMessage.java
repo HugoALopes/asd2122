@@ -34,6 +34,7 @@ public class GetFileMessage extends ProtoMessage {
         @SuppressWarnings("DuplicatedCode")
         @Override
         public void serialize(GetFileMessage msg, ByteBuf out) throws IOException {
+            try{
             byte[] objId = msg.getObjID().toByteArray();
             out.writeInt(objId.length);
             if (objId.length > 0) {
@@ -41,6 +42,10 @@ public class GetFileMessage extends ProtoMessage {
             }
             out.writeLong(msg.uid.getMostSignificantBits());
             out.writeLong(msg.uid.getLeastSignificantBits());
+            }catch (Exception e){
+                e.printStackTrace(System.out);
+                throw e;
+            }
         }
 
         @SuppressWarnings("DuplicatedCode")

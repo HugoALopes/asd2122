@@ -57,6 +57,7 @@ public class KelipsJoinReply extends ProtoMessage {
     public static ISerializer<KelipsJoinReply> serializer = new ISerializer<>() {
         @Override
         public void serialize(KelipsJoinReply msg, ByteBuf out) throws IOException {
+            try{
             out.writeLong(msg.uid.getMostSignificantBits());
             out.writeLong(msg.uid.getLeastSignificantBits());
             Host.serializer.serialize(msg.getSender(), out);
@@ -65,6 +66,10 @@ public class KelipsJoinReply extends ProtoMessage {
             InformationGossip auxMsg = new InformationGossip(msg.contacts, msg.fileTuples, msg.agView);
 
             Serializer.serialize(auxMsg, out);
+            }catch (Exception e){
+                e.printStackTrace(System.out);
+                throw e;
+            }
         }
 
         @Override

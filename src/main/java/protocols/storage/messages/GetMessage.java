@@ -33,6 +33,7 @@ public class GetMessage extends ProtoMessage {
     public static ISerializer<GetMessage> serializer = new ISerializer<>() {
         @Override
         public void serialize(GetMessage saveMessage, ByteBuf out) throws IOException {
+            try{
             out.writeLong(saveMessage.mid.getMostSignificantBits());
             out.writeLong(saveMessage.mid.getLeastSignificantBits());
             byte[] objId = saveMessage.getObjId().toByteArray();
@@ -40,10 +41,15 @@ public class GetMessage extends ProtoMessage {
             if (objId.length > 0) {
                 out.writeBytes(objId);
             }
+            }catch (Exception e){
+                e.printStackTrace(System.out);
+                throw e;
+            }
         }
 
         @Override
         public GetMessage deserialize(ByteBuf in) throws IOException {
+            try{
             long firstLong = in.readLong();
             long secondLong = in.readLong();
             UUID mid = new UUID(firstLong, secondLong);
@@ -54,6 +60,10 @@ public class GetMessage extends ProtoMessage {
             BigInteger objId = new BigInteger(objIdArr);
 
             return new GetMessage(mid, objId);
+            }catch (Exception e){
+                e.printStackTrace(System.out);
+                throw e;
+            }
         }
     };
 }

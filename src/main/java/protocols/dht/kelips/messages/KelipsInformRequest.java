@@ -26,8 +26,13 @@ public class KelipsInformRequest extends ProtoMessage{
 	public static ISerializer<KelipsInformRequest> serializer = new ISerializer<>() {
 		@Override
 		public void serialize(KelipsInformRequest msg, ByteBuf out) throws IOException {
+			try{
 			out.writeLong(msg.uid.getMostSignificantBits());
 			out.writeLong(msg.uid.getLeastSignificantBits());
+			}catch (Exception e){
+				e.printStackTrace(System.out);
+				throw e;
+			}
 		}
 
 		@Override

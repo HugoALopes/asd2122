@@ -39,6 +39,7 @@ public class GetDiffAgFileMessage extends ProtoMessage {
         @SuppressWarnings("DuplicatedCode")
         @Override
         public void serialize(GetDiffAgFileMessage msg, ByteBuf out) throws IOException {
+            try{
             byte[] objId = msg.getObjID().toByteArray();
             out.writeInt(objId.length);
             if (objId.length > 0) {
@@ -47,6 +48,10 @@ public class GetDiffAgFileMessage extends ProtoMessage {
             out.writeLong(msg.uid.getMostSignificantBits());
             out.writeLong(msg.uid.getLeastSignificantBits());
             out.writeBoolean(msg.opType);
+            }catch (Exception e){
+                e.printStackTrace(System.out);
+                throw e;
+            }
         }
 
         @SuppressWarnings("DuplicatedCode")
