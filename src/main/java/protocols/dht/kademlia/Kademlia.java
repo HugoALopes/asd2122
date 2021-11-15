@@ -37,6 +37,10 @@ public class Kademlia extends GenericProtocol {
     private List<Bucket> k_buckets_list;
     private int alfa, k, channelId;
 
+    private List<Node> conections;
+    private List<KademliaFindNodeRequest> waitingForConection;
+    private List<KademliaFindNodeReply> waitingForConectionReply;
+
     public Kademlia(Host self, Properties props) throws HandlerRegistrationException, IOException {
         super(PROTOCOL_NAME, PROTOCOL_ID);
         k_buckets_list = new ArrayList<Bucket>();
@@ -44,6 +48,9 @@ public class Kademlia extends GenericProtocol {
         queriesByIdToFind = new HashMap<>();
         alfa = Integer.parseInt(props.getProperty("alfaValue"));
         k = Integer.parseInt(props.getProperty("kValue"));
+        conections = new ArrayList<>();
+        waitingForConection = new ArrayList<>();
+        waitingForConectionReply = new ArrayList<>();
 
         String cMetricsInterval = props.getProperty("channel_metrics_interval", "10000"); // 10 seconds
 
@@ -54,11 +61,11 @@ public class Kademlia extends GenericProtocol {
         channelProps.setProperty(TCPChannel.PORT_KEY, props.getProperty("port")); // The port to bind to
         channelProps.setProperty(TCPChannel.METRICS_INTERVAL_KEY, cMetricsInterval); // The interval to receive channel
                                                                                      // metrics
-        channelProps.setProperty(TCPChannel.HEARTBEAT_INTERVAL_KEY, "3000"); // Heartbeats interval for established
+        channelProps.setProperty(TCPChannel.HEARTBEAT_INTERVAL_KEY, "5000"); // Heartbeats interval for established
                                                                              // connections
-        channelProps.setProperty(TCPChannel.HEARTBEAT_TOLERANCE_KEY, "3000"); // Time passed without heartbeats until
+        channelProps.setProperty(TCPChannel.HEARTBEAT_TOLERANCE_KEY, "5000"); // Time passed without heartbeats until
                                                                               // closing a connection
-        channelProps.setProperty(TCPChannel.CONNECT_TIMEOUT_KEY, "1000"); // TCP connect timeout
+        channelProps.setProperty(TCPChannel.CONNECT_TIMEOUT_KEY, "5000"); // TCP connect timeout
         channelId = createChannel(TCPChannel.NAME, channelProps); // Create the channel with the given properties
 
         /*----------------------------- Register Message Handlers ----------------------------- */
@@ -66,10 +73,8 @@ public class Kademlia extends GenericProtocol {
         registerMessageHandler(channelId, KademliaFindNodeReply.MESSAGE_ID, this::uponFindNodeReply, this::uponMsgFail);
 
         /*--------------------- Register Message Serializers ----------------------------- */
-        // registerMessageSerializer(channelId, KademliaFindNodeRequest.MESSAGE_ID,
-        // KademliaFindNodeRequest.serializer);
-        // registerMessageSerializer(channelId, KademliaFindNodeReply.MESSAGE_ID,
-        // KademliaFindNodeReply.serializer);
+        registerMessageSerializer(channelId, KademliaFindNodeRequest.MESSAGE_ID, KademliaFindNodeRequest.serializer);
+        registerMessageSerializer(channelId, KademliaFindNodeReply.MESSAGE_ID, KademliaFindNodeReply.serializer);
 
         /*----------------------------- Register Request Handlers ----------------------------- */
         registerRequestHandler(LookupRequest.REQUEST_ID, this::uponLookupRequest);
@@ -85,20 +90,29 @@ public class Kademlia extends GenericProtocol {
     public void init(Properties properties) throws HandlerRegistrationException, IOException {
         triggerNotification(new ChannelCreated(channelId));
         String contact = properties.getProperty("contact");
+        Host contactHost = null;
         if (contact != "null") {
             try {
                 String[] hostElems = contact.split(":");
-                Host contactHost = new Host(InetAddress.getByName(hostElems[0]), Short.parseShort(hostElems[1]));
-                openConnection(contactHost);
+                contactHost = new Host(InetAddress.getByName(hostElems[0]), Short.parseShort(hostElems[1]));
+                //openConnection(contactHost); tirei porque senão ia fazer duas vezes
+               
             } catch (Exception e) {
                 logger.error("Invalid contact on configuration: '" + properties.getProperty("contact"));
+                logger.error(e.getStackTrace());
+                logger.error(e.getMessage());
                 System.exit(-1);
             }
         }
-        
         Bucket b = new Bucket(new BigInteger("0"), BigInteger.ZERO.setBit(160).subtract(BigInteger.ONE));
         b.addNode(my_node);
         k_buckets_list.add(b);
+        
+        if(contactHost != null  && !contactHost.equals(my_node.getHost())){
+        	insert_on_k_bucket(new Node(contactHost, HashGenerator.generateHash(contactHost.toString()))); 
+        	this.node_lookup(my_node.getNodeId(), null);
+
+        }
        
     }
 
@@ -111,8 +125,17 @@ public class Kademlia extends GenericProtocol {
         List<Node> closest_nodes = find_node(msg.getIdToFind());
         insert_on_k_bucket(msg.getSender());
         KademliaFindNodeReply reply = new KademliaFindNodeReply(msg.getUid(), closest_nodes, msg.getIdToFind(),
-                my_node);
-        sendMessage(reply, msg.getSender().getHost());
+                my_node, host);
+        if(conections.contains(new Node(host, HashGenerator.generateHash(host.toString())))){
+        	  sendMessage(reply, msg.getSender().getHost());
+        } //ja tenho conexao
+                    
+        else {
+         	
+        	waitingForConectionReply.add(reply);
+       	openConnection(host);
+        }
+      
     }
 
     private void uponFindNodeReply(KademliaFindNodeReply msg, Host host, short sourceProto, int channelId) {
@@ -122,7 +145,7 @@ public class Kademlia extends GenericProtocol {
         query.receivedFindNodeReply(msg.getSender());
 
         List<Node> kclosestReturned = msg.getClosestNodes();
-        for (int i = 0; i < k; i++) {
+        for (int i = 0; i < k && i < kclosestReturned.size(); i++) {
             insert_on_k_bucket(kclosestReturned.get(i));
             query.updateKclosest(kclosestReturned.get(i), idToFind);
         }
@@ -135,8 +158,14 @@ public class Kademlia extends GenericProtocol {
             List<Node> kclosest = query.getKclosest();
             for (Node n : kclosest) {
                 if (!query.alreadyQueried(n) && !query.stillOngoing(n)) { // ainda não contactei com este no
+                    KademliaFindNodeRequest req = new KademliaFindNodeRequest(msg.getUid(), idToFind, my_node, n);
                     query.sendFindNodeRequest(n);
-                    sendMessage(new KademliaFindNodeRequest(msg.getUid(), idToFind, my_node), n.getHost());
+                    if(conections.contains(n)) //ja tenho conexao
+                        sendMessage(req , n.getHost());
+                    else {
+                        waitingForConection.add(req);
+                        openConnection(n.getHost());
+                    }
                 }
             }
         }
@@ -152,9 +181,33 @@ public class Kademlia extends GenericProtocol {
     // If a connection is successfully established, this event is triggered.
     private void uponOutConnectionUp(OutConnectionUp event, int channelId) {
         Host peer = event.getNode();
-        logger.info("Out Connection to {} is up.", peer);
-        insert_on_k_bucket(new Node(peer, HashGenerator.generateHash(peer.toString()))); 
-        node_lookup(my_node.getNodeId(), null);
+        
+        Node n = new Node(peer, HashGenerator.generateHash(peer.toString()));
+        conections.add(n);
+      	logger.info("Out Connection to {} from {} is up. {}", peer, my_node.getHost(), conections.size());
+	
+	List<KademliaFindNodeRequest> aux = new ArrayList<>();
+        for (KademliaFindNodeRequest req: waitingForConection){
+            if(req.getDest().getNodeId().equals(n.getNodeId())){
+            	sendMessage(req, peer);
+            	aux.add(req);
+            }   
+        }
+          
+        for(KademliaFindNodeRequest req: aux)	   
+      		  waitingForConection.remove(req);
+    	
+    	List<KademliaFindNodeReply> aux2 = new ArrayList<>();
+    	for(KademliaFindNodeReply repl: waitingForConectionReply){
+    		if(repl.getDest().equals(n.getHost())){
+        	    	sendMessage(repl, peer);
+            		aux2.add(repl);
+            	}   
+    	}
+    	
+    	 for(KademliaFindNodeReply req: aux2)	   
+      		  waitingForConectionReply.remove(req);	
+    	
     }
 
     private void uponOutConnectionDown(OutConnectionDown event, int channelId) {
@@ -163,6 +216,7 @@ public class Kademlia extends GenericProtocol {
 
         Node n = new Node(peer, HashGenerator.generateHash(peer.toString()));
         this.remove_from_k_bucket(n);
+        conections.remove(n);
     }
 
     private void uponOutConnectionFailed(OutConnectionFailed<ProtoMessage> event, int channelId) {
@@ -177,6 +231,7 @@ public class Kademlia extends GenericProtocol {
 
         Node n = new Node(peer, HashGenerator.generateHash(peer.toString()));
         this.remove_from_k_bucket(n);
+        conections.remove(n);
     }
 
     /* --------------------------------- Utils ---------------------------- */
@@ -193,10 +248,8 @@ public class Kademlia extends GenericProtocol {
         ArrayList<Node> hosts = insert_bucket.getNodes();
         if(hosts.size() > k  && hosts.contains(my_node)){
             this.divideBucket(insert_bucket);
-            logger.info("k_bucket divided.");
         }
         
-        logger.info("Node added.");
     }
 
     private void remove_from_k_bucket(Node node) {
@@ -239,18 +292,34 @@ public class Kademlia extends GenericProtocol {
         List<Node> kclosest = find_node(id); // list containing the k closest nodes
         // logger.info("pre null pointer: {}", kclosest.size());
         QueryState query = new QueryState(kclosest);
-	
-	logger.info(mid + " dina " + my_node.getHost());
-	
+
         if(kclosest.size() == 1 && kclosest.get(0).equals(my_node)){
             ArrayList<Host> myHost = new ArrayList<>();
             myHost.add(my_node.getHost());
             sendReply(new LookupResponse(mid, id, myHost), Storage.PROTOCOL_ID);
         } else {
             for (int i = 0; i < alfa && i < kclosest.size(); i++) {
-                if (!kclosest.get(i).equals(my_node)) {
-                    query.sendFindNodeRequest(kclosest.get(i));
-                    sendMessage(new KademliaFindNodeRequest(mid, id, my_node), kclosest.get(i).getHost());
+                Node n = kclosest.get(i);
+               
+                if (!n.equals(my_node)) {
+
+                    KademliaFindNodeRequest msg = new KademliaFindNodeRequest(mid, id, my_node, n);
+                    query.sendFindNodeRequest(n);
+                    
+                 
+                  	
+                    	
+                    if(conections.contains(n)){
+                    	 sendMessage(msg , n.getHost());
+			
+                    } //ja tenho conexao
+                    
+                    else {
+                        waitingForConection.add(msg);
+                        openConnection(n.getHost());
+                                    
+                    }
+                    
                 }
     
             }
