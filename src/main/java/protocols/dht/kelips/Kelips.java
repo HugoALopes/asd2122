@@ -305,8 +305,8 @@ public class Kelips extends GenericProtocol {
 
 
     private void uponGetFileMessage(GetFileMessage msg, Host from, short sourceProto, int channelId) {
-        //TODO
-        Host host = filetuples.get(msg.getObjID()); //may be null -> IT IS A PROBLEM!!!
+        Host host = filetuples.get(msg.getObjID());
+        if (host == null) return;
         GetFileReply msgR = new GetFileReply(msg.getObjID(), msg.getUid(), host);
         checkConn(from);
         sendMessage(msgR, from);

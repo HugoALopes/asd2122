@@ -8,13 +8,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a0bbf4ba-7463-49e9-98fd-bb596853f106" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/protocols/dht/kelips/Kelips.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/dht/kelips/Kelips.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/protocols/dht/kelips/messages/GetDiffAgFileMessage.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/dht/kelips/messages/GetDiffAgFileMessage.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/protocols/dht/kelips/messages/GetFileMessage.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/dht/kelips/messages/GetFileMessage.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/protocols/dht/kelips/messages/KelipsJoinRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/dht/kelips/messages/KelipsJoinRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/protocols/storage/Storage.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/storage/Storage.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/protocols/storage/messages/SaveMessage.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/storage/messages/SaveMessage.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
