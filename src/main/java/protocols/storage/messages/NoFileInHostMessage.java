@@ -27,10 +27,15 @@ public class NoFileInHostMessage extends ProtoMessage {
     public static ISerializer<NoFileInHostMessage> serializer = new ISerializer<>() {
         @Override
         public void serialize(NoFileInHostMessage msg, ByteBuf out) throws IOException {
+            try{
             out.writeLong(msg.mid.getMostSignificantBits());
             out.writeLong(msg.mid.getLeastSignificantBits());
 
             out.writeShort(msg.getId());
+            }catch (Exception e){
+                e.printStackTrace(System.out);
+                throw e;
+            }
         }
 
         @Override

@@ -1,6 +1,7 @@
 /home/hugo/Desktop/ASD/Proj1/asd2122/src/main/java/protocols/dht/kademlia/messages/KademliaFindNodeReply.java
 /home/hugo/Desktop/ASD/Proj1/asd2122/src/main/java/protocols/broadcast/common/BroadcastRequest.java
 /home/hugo/Desktop/ASD/Proj1/asd2122/src/main/java/protocols/storage/messages/GetMessage.java
+/home/hugo/Desktop/ASD/Proj1/asd2122/src/main/java/protocols/storage/messages/NoFileInHostMessage.java
 /home/hugo/Desktop/ASD/Proj1/asd2122/src/main/java/protocols/apps/timers/ExitTimer.java
 /home/hugo/Desktop/ASD/Proj1/asd2122/src/main/java/protocols/dht/kelips/messages/KelipsJoinReply.java
 /home/hugo/Desktop/ASD/Proj1/asd2122/src/main/java/protocols/broadcast/FloodBroadcast.java
@@ -17,6 +18,7 @@
 /home/hugo/Desktop/ASD/Proj1/asd2122/src/main/java/utils/HashProducer.java
 /home/hugo/Desktop/ASD/Proj1/asd2122/src/main/java/utils/HashGenerator.java
 /home/hugo/Desktop/ASD/Proj1/asd2122/src/main/java/protocols/timers/GossipTimer.java
+/home/hugo/Desktop/ASD/Proj1/asd2122/src/main/java/protocols/dht/kademlia/Bucket.java
 /home/hugo/Desktop/ASD/Proj1/asd2122/src/main/java/protocols/broadcast/common/DeliverNotification.java
 /home/hugo/Desktop/ASD/Proj1/asd2122/src/main/java/protocols/dht/kelips/messages/GetFileReply.java
 /home/hugo/Desktop/ASD/Proj1/asd2122/src/main/java/protocols/dht/kademlia/Kademlia.java

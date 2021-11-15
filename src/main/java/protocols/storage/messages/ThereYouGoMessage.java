@@ -53,6 +53,7 @@ public class ThereYouGoMessage extends ProtoMessage {
     public static ISerializer<ThereYouGoMessage> serializer = new ISerializer<>() {
         @Override
         public void serialize(ThereYouGoMessage ThereYouGoMessage, ByteBuf out) throws IOException {
+            try{
             out.writeLong(ThereYouGoMessage.mid.getMostSignificantBits());
             out.writeLong(ThereYouGoMessage.mid.getLeastSignificantBits());
             Host.serializer.serialize(ThereYouGoMessage.getHost(), out);
@@ -65,6 +66,10 @@ public class ThereYouGoMessage extends ProtoMessage {
             out.writeInt(ThereYouGoMessage.content.length);
             if (ThereYouGoMessage.content.length > 0) {
                 out.writeBytes(ThereYouGoMessage.content);
+            }
+            }catch (Exception e){
+                e.printStackTrace(System.out);
+                throw e;
             }
         }
 

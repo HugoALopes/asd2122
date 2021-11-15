@@ -62,7 +62,6 @@ channel/notifications/ChannelCreated.class
 utils/InterfaceToIp.class
 protocols/dht/kelips/messages/GetDiffAgFileMessage.class
 protocols/storage/messages/SuccessSaveMessage.class
-protocols/dht/kademlia/Node$1.class
 protocols/dht/kademlia/messages/KademliaFindNodeReply.class
 protocols/storage/replies/RetrieveOKReply.class
 protocols/storage/messages/NoFileInHostMessage.class

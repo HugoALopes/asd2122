@@ -33,12 +33,17 @@ public class GetMessage extends ProtoMessage {
     public static ISerializer<GetMessage> serializer = new ISerializer<>() {
         @Override
         public void serialize(GetMessage saveMessage, ByteBuf out) throws IOException {
+            try{
             out.writeLong(saveMessage.mid.getMostSignificantBits());
             out.writeLong(saveMessage.mid.getLeastSignificantBits());
             byte[] objId = saveMessage.getObjId().toByteArray();
             out.writeInt(objId.length);
             if (objId.length > 0) {
                 out.writeBytes(objId);
+            }
+            }catch (Exception e){
+                e.printStackTrace(System.out);
+                throw e;
             }
         }
 

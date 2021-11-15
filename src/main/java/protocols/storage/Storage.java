@@ -28,7 +28,7 @@ public class Storage extends GenericProtocol {
     // Protocol information, to register in babel
     public static final String PROTOCOL_NAME = "Store";
     public static final short PROTOCOL_ID = 200;
-    public static final short DHT_PROTOCOL = 1100;
+    public static final short DHT_PROTOCOL = 100;
     public static final short APP_PROTOCOL = 300;
 
     private static final int CACHE_TIMEOUT = 50000;
@@ -144,7 +144,6 @@ public class Storage extends GenericProtocol {
         }
            
         byte[] content = (cache.get(id) == null) ? store.get(id) : cache.get(id).getContent();
-	
 
         if (content == null) {
             findHost(new Operation(false, id, request.getName()));
@@ -165,7 +164,6 @@ public class Storage extends GenericProtocol {
         if (context.get(contID).getOpType()) { //True if insert/Put; False if retrieve/Get
             byte[] content = cache.get(response.getObjId()).getContent(); // se isto demorar o objeto pode ja não estar em cache
             //byte[] content = (cache.get(response.getObjId()) == null) ? store.get(response.getObjId()) : cache.get(response.getObjId()).getContent();
-
 
             hostList.forEach(host -> {
                 if (host.equals(me)) {
@@ -220,7 +218,8 @@ public class Storage extends GenericProtocol {
 
     private void uponSaveMessage(SaveMessage msg, Host host, short proto, int channelId) {
         store.put(msg.getObjId(), msg.getContent());
-        sendMessage(new SuccessSaveMessage(msg.getMid(), null), host);
+        //sendMessage(new SuccessSaveMessage(msg.getMid(), msg.getMid().toString()), host);
+        sendMessage(new SuccessSaveMessage(msg.getMid()), host);
     }
 
     private void uponSuccessSaveMessage(SuccessSaveMessage msg, Host host, short proto, int channelId) {

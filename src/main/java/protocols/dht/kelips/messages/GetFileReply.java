@@ -22,6 +22,7 @@ public class GetFileReply extends ProtoMessage {
         super(MESSAGE_ID);
         this.objID = objID;
         this.uid = uid;
+        this.host=host;
     }
 
     public BigInteger getObjID() {
@@ -40,6 +41,7 @@ public class GetFileReply extends ProtoMessage {
         @SuppressWarnings("DuplicatedCode")
         @Override
         public void serialize(GetFileReply msg, ByteBuf out) throws IOException {
+            try{
             byte[] objId = msg.getObjID().toByteArray();
             out.writeInt(objId.length);
             if (objId.length > 0) {
@@ -48,6 +50,10 @@ public class GetFileReply extends ProtoMessage {
             out.writeLong(msg.uid.getMostSignificantBits());
             out.writeLong(msg.uid.getLeastSignificantBits());
             Host.serializer.serialize(msg.getHost(), out);
+            }catch (Exception e){
+                e.printStackTrace(System.out);
+                throw e;
+            }
         }
 
         @SuppressWarnings("DuplicatedCode")

@@ -372,7 +372,7 @@ public class Kelips extends GenericProtocol {
 
     private void uponMsgFail(ProtoMessage msg, Host host, short destProto,
                              Throwable throwable, int channelId) {
-
+        logger.info("{} -> Msg failed", me);
         BigInteger hash = HashGenerator.generateHash(host.toString());
         int fromID = (hash.intValue() % this.agNum);
 
@@ -399,11 +399,8 @@ public class Kelips extends GenericProtocol {
                 sendReply(reply, Storage.PROTOCOL_ID);
 
             } else {
-
                 host = filetuples.get(lookupRequest.getObjID());
-
                 if (host == null) {//file on my AG but I do not know it
-
                     GetFileMessage msg =
                             new GetFileMessage(lookupRequest.getRequestUID(), lookupRequest.getObjID());
 

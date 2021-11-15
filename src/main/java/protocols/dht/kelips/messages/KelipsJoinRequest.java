@@ -4,11 +4,16 @@ import java.io.IOException;
 import java.util.UUID;
 
 import io.netty.buffer.ByteBuf;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import protocols.dht.kelips.Kelips;
 import pt.unl.fct.di.novasys.network.ISerializer;
 import pt.unl.fct.di.novasys.network.data.Host;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 
 public class KelipsJoinRequest extends ProtoMessage{
+
+    private static final Logger logger = LogManager.getLogger(KelipsJoinRequest.class);
     public final static short MESSAGE_ID = 130;
 	
 	private UUID uid;
@@ -38,6 +43,7 @@ public class KelipsJoinRequest extends ProtoMessage{
     public static ISerializer<KelipsJoinRequest> serializer = new ISerializer<>() {
         @Override
         public void serialize(KelipsJoinRequest msg, ByteBuf out) throws IOException {
+            //System.out.println("In ser");
             out.writeLong(msg.uid.getMostSignificantBits());
             out.writeLong(msg.uid.getLeastSignificantBits());
             Host.serializer.serialize(msg.getHost(), out);
@@ -46,13 +52,13 @@ public class KelipsJoinRequest extends ProtoMessage{
 
         @Override
         public KelipsJoinRequest deserialize(ByteBuf in) throws IOException {
+            //System.out.println("In deSer");
             long firstLong = in.readLong();
             long secondLong = in.readLong();
             UUID mid = new UUID(firstLong, secondLong);
             Host sender = Host.serializer.deserialize(in);
             long time = in.readLong();
 
-            //TODO - Check
             return new KelipsJoinRequest(sender);
         }
     };

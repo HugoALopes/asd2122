@@ -54,18 +54,24 @@ public class SaveMessage extends ProtoMessage {
     public static ISerializer<SaveMessage> serializer = new ISerializer<>() {
         @Override
         public void serialize(SaveMessage saveMessage, ByteBuf out) throws IOException {
-            out.writeLong(saveMessage.mid.getMostSignificantBits());
-            out.writeLong(saveMessage.mid.getLeastSignificantBits());
-            Host.serializer.serialize(saveMessage.getHost(), out);
-            out.writeShort(saveMessage.getId());
-            byte[] objId = saveMessage.getObjId().toByteArray();
-            out.writeInt(objId.length);
-            if (objId.length > 0) {
-                out.writeBytes(objId);
-            }
-            out.writeInt(saveMessage.content.length);
-            if (saveMessage.content.length > 0) {
-                out.writeBytes(saveMessage.content);
+            System.out.println(saveMessage.mid + " > " + saveMessage.id + " > " + saveMessage.host + " > " + saveMessage.content);
+            try {
+                out.writeLong(saveMessage.mid.getMostSignificantBits());
+                out.writeLong(saveMessage.mid.getLeastSignificantBits());
+                Host.serializer.serialize(saveMessage.getHost(), out);
+                out.writeShort(saveMessage.getId());
+                byte[] objId = saveMessage.getObjId().toByteArray();
+                out.writeInt(objId.length);
+                if (objId.length > 0) {
+                    out.writeBytes(objId);
+                }
+                out.writeInt(saveMessage.content.length);
+                if (saveMessage.content.length > 0) {
+                    out.writeBytes(saveMessage.content);
+                }
+            }catch (Exception e){
+                e.printStackTrace(System.out);
+                throw e;
             }
         }
 
@@ -75,7 +81,7 @@ public class SaveMessage extends ProtoMessage {
             long secondLong = in.readLong();
             UUID mid = new UUID(firstLong, secondLong);
             Host sender = Host.serializer.deserialize(in);
-            //short toDeliver = in.readShort();
+            short toDeliver = in.readShort();
             int size = in.readInt();
             byte[] objIdArr = new byte[size];
             if (size > 0) //TODO - devia ser while?
