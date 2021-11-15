@@ -40,11 +40,16 @@ public class NoFileInHostMessage extends ProtoMessage {
 
         @Override
         public NoFileInHostMessage deserialize(ByteBuf in) throws IOException {
+            try{
             long firstLong = in.readLong();
             long secondLong = in.readLong();
             UUID mid = new UUID(firstLong, secondLong);
 
             return new NoFileInHostMessage(mid);
+            }catch (Exception e){
+                e.printStackTrace(System.out);
+                throw e;
+            }
         }
     };
 }

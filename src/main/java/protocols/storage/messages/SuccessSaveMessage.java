@@ -51,6 +51,7 @@ public class SuccessSaveMessage extends ProtoMessage {
 
         @Override
         public SuccessSaveMessage deserialize(ByteBuf in) throws IOException {
+            try{
             long firstLong = in.readLong();
             long secondLong = in.readLong();
             UUID mid = new UUID(firstLong, secondLong);
@@ -58,6 +59,10 @@ public class SuccessSaveMessage extends ProtoMessage {
 
             //TODO - Check .toString
             return new SuccessSaveMessage(mid);
+             }catch (Exception e){
+                e.printStackTrace(System.out);
+                throw e;
+            }
         }
     };
 }

@@ -49,6 +49,7 @@ public class GetMessage extends ProtoMessage {
 
         @Override
         public GetMessage deserialize(ByteBuf in) throws IOException {
+            try{
             long firstLong = in.readLong();
             long secondLong = in.readLong();
             UUID mid = new UUID(firstLong, secondLong);
@@ -59,6 +60,10 @@ public class GetMessage extends ProtoMessage {
             BigInteger objId = new BigInteger(objIdArr);
 
             return new GetMessage(mid, objId);
+            }catch (Exception e){
+                e.printStackTrace(System.out);
+                throw e;
+            }
         }
     };
 }

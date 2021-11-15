@@ -218,11 +218,13 @@ public class Storage extends GenericProtocol {
     private void uponSaveMessage(SaveMessage msg, Host host, short proto, int channelId) {
         store.put(msg.getObjId(), msg.getContent());
         //sendMessage(new SuccessSaveMessage(msg.getMid(), msg.getMid().toString()), host);
+        openConnection(host);
         sendMessage(new SuccessSaveMessage(msg.getMid()), host);
     }
 
     private void uponSuccessSaveMessage(SuccessSaveMessage msg, Host host, short proto, int channelId) {
         sendReply(new StoreOKReply(context.get(msg.getUid()).getName(), msg.getUid()), APP_PROTOCOL);
+        openConnection(host);
         context.remove(msg.getUid());
     }
 

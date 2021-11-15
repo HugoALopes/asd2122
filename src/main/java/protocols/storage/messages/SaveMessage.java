@@ -76,6 +76,7 @@ public class SaveMessage extends ProtoMessage {
 
         @Override
         public SaveMessage deserialize(ByteBuf in) throws IOException {
+            try{
             long firstLong = in.readLong();
             long secondLong = in.readLong();
             UUID mid = new UUID(firstLong, secondLong);
@@ -93,6 +94,10 @@ public class SaveMessage extends ProtoMessage {
 
             //TODO - Check
             return new SaveMessage(mid, objId, sender, content);
+            }catch (Exception e){
+                e.printStackTrace(System.out);
+                throw e;
+            }
         }
     };
 }

@@ -75,12 +75,14 @@ public class ThereYouGoMessage extends ProtoMessage {
 
         @Override
         public ThereYouGoMessage deserialize(ByteBuf in) throws IOException {
+            try{
             long firstLong = in.readLong();
             long secondLong = in.readLong();
             UUID mid = new UUID(firstLong, secondLong);
             Host sender = Host.serializer.deserialize(in);
-            //short toDeliver = in.readShort();
+            short toDeliver = in.readShort();
             int size = in.readInt();
+                       
             byte[] objIdArr = new byte[size];
             if (size > 0) //TODO - devia ser while?
                 in.readBytes(objIdArr);
@@ -92,6 +94,11 @@ public class ThereYouGoMessage extends ProtoMessage {
 
             //TODO - Check
             return new ThereYouGoMessage(mid, objId, sender, content);
+              }catch (Exception e){
+
+                e.printStackTrace(System.out);
+                throw e;
+            }
         }
     };
 }
