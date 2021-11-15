@@ -128,6 +128,7 @@ public class Kelips extends GenericProtocol {
 
     @Override
     public void init(Properties properties) {
+        logger.info(">> STORAGE --> {}",channelId);
         triggerNotification(new ChannelCreated(channelId));
         if (properties.containsKey("contact")) {
             try {

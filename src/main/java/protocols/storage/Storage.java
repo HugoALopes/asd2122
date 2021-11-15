@@ -12,6 +12,7 @@ import protocols.timers.CacheDeleteTimer;
 import pt.unl.fct.di.novasys.babel.core.GenericProtocol;
 import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
+import pt.unl.fct.di.novasys.channel.tcp.TCPChannel;
 import pt.unl.fct.di.novasys.network.data.Host;
 
 import java.io.IOException;
@@ -34,7 +35,7 @@ public class Storage extends GenericProtocol {
     private static final int CACHE_TIMEOUT = 50000;
     private final Host me;
     //@SuppressWarnings("FieldCanBeLocal")
-    //private int channelId;
+    private int channelId;
 
     private final Map<BigInteger, CacheContent> cache;
     private final Map<BigInteger, byte[]> store;
@@ -53,6 +54,30 @@ public class Storage extends GenericProtocol {
         connections = new HashSet<>();
         //contextId=0;
 
+        //Create a properties object to setup channel-specific properties. See the channel description for more details.
+        Properties channelProps = new Properties();
+        channelProps.setProperty(TCPChannel.ADDRESS_KEY, props.getProperty("address")); //The address to bind to
+        channelProps.setProperty(TCPChannel.PORT_KEY, props.getProperty("storage_port")); //The port to bind to
+        //channelProps.setProperty(TCPChannel.METRICS_INTERVAL_KEY, cMetricsInterval); //The interval to receive channel metrics
+        channelProps.setProperty(TCPChannel.HEARTBEAT_INTERVAL_KEY, "1000"); //Heartbeats interval for established connections
+        channelProps.setProperty(TCPChannel.HEARTBEAT_TOLERANCE_KEY, "3000"); //Time passed without heartbeats until closing a connection
+        channelProps.setProperty(TCPChannel.CONNECT_TIMEOUT_KEY, "1000"); //TCP connect timeout
+        channelId = createChannel(TCPChannel.NAME, channelProps); //Create the channel with the given properties
+
+        /*---------------------- Register Message Handlers ---------------------- */
+        registerMessageHandler(channelId, SaveMessage.MSG_ID, this::uponSaveMessage, this::uponSaveMsgFail);
+        registerMessageHandler(channelId, SuccessSaveMessage.MSG_ID, this::uponSuccessSaveMessage, this::uponFailSave);
+        registerMessageHandler(channelId, GetMessage.MSG_ID, this::uponGetMessage, this::uponFailGet);
+        registerMessageHandler(channelId, ThereYouGoMessage.MSG_ID, this::uponThereYouGoMessage, this::uponFailRetrieve);
+        registerMessageHandler(channelId, NoFileInHostMessage.MSG_ID, this::uponNoFileInHost, this::uponSaveMsgFail);
+
+        /*---------------------- Register Message Serializers ---------------------- */
+        registerMessageSerializer(channelId, SaveMessage.MSG_ID, SaveMessage.serializer);
+        registerMessageSerializer(channelId, SuccessSaveMessage.MSG_ID, SuccessSaveMessage.serializer);
+        registerMessageSerializer(channelId, GetMessage.MSG_ID, GetMessage.serializer);
+        registerMessageSerializer(channelId, ThereYouGoMessage.MSG_ID, ThereYouGoMessage.serializer);
+        registerMessageSerializer(channelId, NoFileInHostMessage.MSG_ID, NoFileInHostMessage.serializer);
+
         /*--------------------- Register Request Handlers ----------------------------- */
         registerRequestHandler(StoreRequest.REQUEST_ID, this::uponStoreRequest);
         registerRequestHandler(RetrieveRequest.REQUEST_ID, this::uponRetrieveRequest);
@@ -63,7 +88,7 @@ public class Storage extends GenericProtocol {
         /*--------------------- Register Notification Handlers ----------------------------- */
         // subscribeNotification(NeighbourUp.NOTIFICATION_ID, this::uponNeighbourUp);
         // subscribeNotification(NeighbourDown.NOTIFICATION_ID, this::uponNeighbourDown);
-        subscribeNotification(ChannelCreated.NOTIFICATION_ID, this::uponChannelCreated);
+        //subscribeNotification(ChannelCreated.NOTIFICATION_ID, this::uponChannelCreated);
 
         /*--------------------- Register Timer Handlers ----------------------------- */
         registerTimerHandler(CacheDeleteTimer.TIMER_ID, this::uponCacheDeleteTimer);
@@ -71,9 +96,10 @@ public class Storage extends GenericProtocol {
 
     @Override
     public void init(Properties props) {
-
+        channelReady = true;
         // setup timer to delete cache
         //setupPeriodicTimer(new CacheDeleteTimer(), CACHE_TIMEOUT, CACHE_TIMEOUT);
+        logger.info(">> STORAGE --> {}",channelId);
     }
 
     // Upon receiving the channelId from the membership, register our own callbacks
@@ -171,7 +197,7 @@ public class Storage extends GenericProtocol {
                     sendReply(new StoreOKReply(context.get(contID).getName(), contID), APP_PROTOCOL);
                 } else {
                     SaveMessage requestMsg = new SaveMessage(contID, response.getObjId(), host, content);
-                    openConnection(host);
+                    checkConn(host);
                     sendMessage(requestMsg, host);
                 }
             });
@@ -186,7 +212,7 @@ public class Storage extends GenericProtocol {
             }
 
             GetMessage getMsg = new GetMessage(contID, context.get(contID).getId());
-            openConnection(host);
+            checkConn(host);
             sendMessage(getMsg, host);
 
 
@@ -218,6 +244,7 @@ public class Storage extends GenericProtocol {
     private void uponSaveMessage(SaveMessage msg, Host host, short proto, int channelId) {
         store.put(msg.getObjId(), msg.getContent());
         //sendMessage(new SuccessSaveMessage(msg.getMid(), msg.getMid().toString()), host);
+        checkConn(host);
         sendMessage(new SuccessSaveMessage(msg.getMid()), host);
     }
 
@@ -228,6 +255,7 @@ public class Storage extends GenericProtocol {
 
     private void uponGetMessage(GetMessage getMsg, Host host, short proto, int channelId) {
         byte[] content = store.get(getMsg.getObjId());
+        checkConn(host);
         if (content != null) {
             sendMessage(new ThereYouGoMessage(getMsg.getMid(), getMsg.getObjId(), host, store.get(getMsg.getObjId())),
                     host);
@@ -255,7 +283,7 @@ public class Storage extends GenericProtocol {
         if (!op.alreadyAskedAll()) {
             Host h = op.getHost();
             GetMessage getMsg = new GetMessage(msg.getMid(), context.get(msg.getMid()).getId());
-            openConnection(h);
+            checkConn(h);
             sendMessage(getMsg, h);
         } else {
             sendReply(new RetrieveFailedReply(context.get(msg.getMid()).getName(), msg.getMid()), APP_PROTOCOL);
@@ -293,6 +321,14 @@ public class Storage extends GenericProtocol {
 
         for (BigInteger key : aux) {
             cache.remove(key);
+        }
+    }
+
+    /*--------------------------------- Utils ---------------------------------------- */
+    private void checkConn(Host h) {
+        if (!connections.contains(h)) {
+            openConnection(h);
+            connections.add(h);
         }
     }
 

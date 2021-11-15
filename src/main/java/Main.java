@@ -42,20 +42,20 @@ public class Main {
 
         //The Host object is an address/port pair that represents a network host. It is used extensively in babel
         //It implements equals and hashCode, and also includes a serializer that makes it easy to use in network messages
-        Host myself =  new Host(InetAddress.getByName(props.getProperty("address")),
+        Host myself = new Host(InetAddress.getByName(props.getProperty("address")),
                 Integer.parseInt(props.getProperty("port")));
-        
-	String contact = props.getProperty("contact");
-	String[] hostElems = contact.split(":");
-	props.setProperty("contact", props.getProperty("address") + ":" + hostElems[1]);
-	 
-	 
+
+        String contact = props.getProperty("contact");
+        String[] hostElems = contact.split(":");
+        props.setProperty("contact", props.getProperty("address") + ":" + hostElems[1]);
+
+
         logger.info("Hello, I am {}", myself);
- 
+
         // Application
         AutomatedApplication app = new AutomatedApplication(myself, props, Storage.PROTOCOL_ID);
         // Storage Protocol
-        Storage storage = new Storage(props,myself);
+        Storage storage = new Storage(props, myself);
         // DHT Protocol
         Kelips dht = new Kelips(myself, props);
         //Kademlia dht = new Kademlia(myself, props);
@@ -75,10 +75,10 @@ public class Main {
         app.init(props);
         /** You need to uncomment the next two lines when you have protocols to fill those gaps **/
         storage.init(props);
-       
+
         //gossip.init(props);
 
-	dht.init(props);
+        dht.init(props);
 
         //Start babel and protocol threads
         babel.start();
