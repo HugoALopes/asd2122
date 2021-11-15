@@ -34,7 +34,6 @@ public class GetFileMessage extends ProtoMessage {
         @SuppressWarnings("DuplicatedCode")
         @Override
         public void serialize(GetFileMessage msg, ByteBuf out) throws IOException {
-            System.out.println(msg.uid + " > " + " > " + msg.objID);
             try{
             byte[] objId = msg.getObjID().toByteArray();
             out.writeInt(objId.length);

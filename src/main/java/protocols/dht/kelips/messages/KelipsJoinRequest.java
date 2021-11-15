@@ -43,7 +43,6 @@ public class KelipsJoinRequest extends ProtoMessage{
     public static ISerializer<KelipsJoinRequest> serializer = new ISerializer<>() {
         @Override
         public void serialize(KelipsJoinRequest msg, ByteBuf out) throws IOException {
-            //System.out.println("In ser");
             out.writeLong(msg.uid.getMostSignificantBits());
             out.writeLong(msg.uid.getLeastSignificantBits());
             Host.serializer.serialize(msg.getHost(), out);
@@ -52,7 +51,6 @@ public class KelipsJoinRequest extends ProtoMessage{
 
         @Override
         public KelipsJoinRequest deserialize(ByteBuf in) throws IOException {
-            //System.out.println("In deSer");
             long firstLong = in.readLong();
             long secondLong = in.readLong();
             UUID mid = new UUID(firstLong, secondLong);

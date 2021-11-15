@@ -54,7 +54,6 @@ public class SaveMessage extends ProtoMessage {
     public static ISerializer<SaveMessage> serializer = new ISerializer<>() {
         @Override
         public void serialize(SaveMessage saveMessage, ByteBuf out) throws IOException {
-            System.out.println(saveMessage.mid + " > " + saveMessage.id + " > " + saveMessage.host + " > " + saveMessage.content);
             try {
                 out.writeLong(saveMessage.mid.getMostSignificantBits());
                 out.writeLong(saveMessage.mid.getLeastSignificantBits());

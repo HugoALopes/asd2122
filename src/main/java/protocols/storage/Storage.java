@@ -41,7 +41,7 @@ public class Storage extends GenericProtocol {
     private final Map<UUID, Operation> context;
 
     private Set<Host> connections;
-    
+
     private boolean channelReady;
 
     public Storage(Properties props, Host myself) throws IOException, HandlerRegistrationException {
@@ -117,14 +117,14 @@ public class Storage extends GenericProtocol {
     /*--------------------------------- Requests ---------------------------------------- */
     private void uponStoreRequest(StoreRequest request, short sourceProto) {
 
-        if (!channelReady){
+        if (!channelReady) {
             logger.info("The channel isn't ready to use.");
             return;
         }
 
         BigInteger id = generateHash(request.getName());
-        if(id.signum() == -1){
-        	id = id.negate();
+        if (id.signum() == -1) {
+            id = id.negate();
         }
         byte[] content = request.getContent();
         cache.put(id, new CacheContent(LocalDateTime.now(), content)); //Porque é que é necessário colocar em cache?
@@ -133,16 +133,16 @@ public class Storage extends GenericProtocol {
     }
 
     private void uponRetrieveRequest(RetrieveRequest request, short sourceProto) {
-        if (!channelReady){
+        if (!channelReady) {
             logger.info("The channel isn't ready to use.");
             return;
         }
 
         BigInteger id = generateHash(request.getName());
-        if(id.signum() == -1){
-        	id = id.negate();
+        if (id.signum() == -1) {
+            id = id.negate();
         }
-           
+
         byte[] content = (cache.get(id) == null) ? store.get(id) : cache.get(id).getContent();
 
         if (content == null) {
@@ -169,42 +169,41 @@ public class Storage extends GenericProtocol {
                 if (host.equals(me)) {
                     store.put(response.getObjId(), content);
                     sendReply(new StoreOKReply(context.get(contID).getName(), contID), APP_PROTOCOL);
-                }
-                else{
-                	SaveMessage requestMsg = new SaveMessage(contID, response.getObjId(), host, content);
-                	openConnection(host);
-                	sendMessage(requestMsg, host);
+                } else {
+                    SaveMessage requestMsg = new SaveMessage(contID, response.getObjId(), host, content);
+                    openConnection(host);
+                    sendMessage(requestMsg, host);
                 }
             });
 
         } else {
             Operation op = context.get(contID);
             Host host = op.getHost();
-	
-	    if(host.equals(me)){
-	    	if(op.nextHost())
-	    		host = op.getHost();
-	    }
-	     
-	    GetMessage getMsg = new GetMessage(contID, context.get(contID).getId());
+
+            if (host.equals(me)) {
+                if (op.nextHost())
+                    host = op.getHost();
+            }
+
+            GetMessage getMsg = new GetMessage(contID, context.get(contID).getId());
             openConnection(host);
             sendMessage(getMsg, host);
-	 	
-            
+
+
         }
     }
 
     /*--------------------------------- Messages ---------------------------------------- */
-    private void uponNoFileInHost(NoFileInHostMessage msg, Host host, short proto, int channelId){
+    private void uponNoFileInHost(NoFileInHostMessage msg, Host host, short proto, int channelId) {
         Operation op = context.get(msg.getUid());
-        if(!op.alreadyAskedAll()){
+        if (!op.alreadyAskedAll()) {
             Host h = null;
-            
-            if(host.equals(me)){
-	    	if(op.nextHost())
-	    		host = op.getHost();
-	    }
-	      
+
+            if (host.equals(me)) {
+                if (op.nextHost())
+                    host = op.getHost();
+            }
+
             GetMessage getMsg = new GetMessage(msg.getUid(), context.get(msg.getUid()).getId());
             //openConnection(h);
             sendMessage(getMsg, h);
@@ -213,7 +212,7 @@ public class Storage extends GenericProtocol {
             context.remove(msg.getUid());
             logger.info("Não consegui encontrar um nó com o ficheiro procurado");
         }
-        
+
     }
 
     private void uponSaveMessage(SaveMessage msg, Host host, short proto, int channelId) {
@@ -229,12 +228,12 @@ public class Storage extends GenericProtocol {
 
     private void uponGetMessage(GetMessage getMsg, Host host, short proto, int channelId) {
         byte[] content = store.get(getMsg.getObjId());
-        if(content != null){
+        if (content != null) {
             sendMessage(new ThereYouGoMessage(getMsg.getMid(), getMsg.getObjId(), host, store.get(getMsg.getObjId())),
-                host);
+                    host);
         } else {
             sendMessage(new NoFileInHostMessage(getMsg.getMid()), host);
-        }   
+        }
     }
 
     private void uponThereYouGoMessage(ThereYouGoMessage msg, Host host, short proto, int channelId) {
@@ -253,8 +252,8 @@ public class Storage extends GenericProtocol {
         }*/
 
         Operation op = context.get(msg.getMid());
-        if(!op.alreadyAskedAll()){
-            Host h = op.getHost(); 
+        if (!op.alreadyAskedAll()) {
+            Host h = op.getHost();
             GetMessage getMsg = new GetMessage(msg.getMid(), context.get(msg.getMid()).getId());
             openConnection(h);
             sendMessage(getMsg, h);
