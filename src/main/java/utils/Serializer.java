@@ -2,6 +2,7 @@ package utils;
 
 import java.io.*;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -71,24 +72,6 @@ public class Serializer {
         });
     }
 
-    /*
-    public static InformationGossip deserialize(byte[] bytes) {
-        logger.info("inside Deserializer");
-        InformationGossip o = null;
-        ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-        //ObjectInput in = null;
-        try {
-            logger.info("inside Deserializer try");
-            ObjectInput in = new ObjectInputStream(bis);
-            logger.info("inside Deserializer try 2 -> {}", in.readObject());
-            o = (InformationGossip) in.readObject();
-            logger.info("inside Deserializer obj -> {}", o.getContacts());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return o;
-    }*/
-
     public static InformationGossip deserialize(ByteBuf in) {
 
         int mapISH_Size = in.readInt();
@@ -137,4 +120,53 @@ public class Serializer {
 
         return new InformationGossip(contacts, filetuples, agView);
     }
+/*
+    public static InformationGossip deserialize(ByteBuffer in) {
+
+        int mapISH_Size = in.getInt();
+        Map<Integer, Set<Host>> contacts = new HashMap<>();
+        for (int i = 0; i < mapISH_Size; i++) {
+            int key = in.getInt();
+            int auxSetSize = in.getInt();
+            Set<Host> value = new HashSet<>();
+            for (int j = 0; j < auxSetSize; j++) {
+                try {
+                    Host h = Host.serializer.deserialize(in);
+                    value.add(h);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            contacts.put(key, value);
+        }
+
+        int mapBIH_Size = in.getInt();
+        Map<BigInteger, Host> filetuples = new HashMap<>();
+        for (int i = 0; i < mapBIH_Size; i++) {
+            try {
+                int size = in.getInt();
+                byte[] objIdArr = new byte[size];
+                if (size > 0)
+                    in.getBytes(objIdArr);
+                BigInteger key = new BigInteger(objIdArr);
+                Host value = Host.serializer.deserialize(in);
+                filetuples.put(key, value);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        int setH_Size = in.readInt();
+        Set<Host> agView = new HashSet<>();
+        for (int i = 0; i < setH_Size; i++) {
+            try {
+                Host h = Host.serializer.deserialize(in);
+                agView.add(h);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return new InformationGossip(contacts, filetuples, agView);
+    }*/
 }

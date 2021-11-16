@@ -213,7 +213,7 @@ public class Kelips extends GenericProtocol {
     /*--------------------------------- TCP ---------------------------------------- */
     // If a connection is successfully established, this event is triggered.
     private void uponOutConnectionUp(OutConnectionUp event, int channelId) {
-        logger.info("{} -> In uponOutConnectionUp", me);
+        logger.debug("{} -> In uponOutConnectionUp", me);
         Host peer = event.getNode();
         //Set<Reason> reasons = pending.remove(peer);
         logger.info("{} -> Out Connection to {} is up.", me, peer);
@@ -251,7 +251,7 @@ public class Kelips extends GenericProtocol {
 
         BigInteger hash = HashGenerator.generateHash(peer.toString());
         int fromID = hash.mod(BigInteger.valueOf(this.agNum)).intValueExact();
-        logger.info("{} -> contact list {}", me, contacts.toString());
+        logger.debug("{} -> contact list {}", me, contacts.toString());
         this.removeContact(fromID, peer);
         connections.remove(event.getNode());
     }
@@ -306,9 +306,8 @@ public class Kelips extends GenericProtocol {
                 sendMessage(new KelipsJoinRequest(me), h);
             }
         }
-        logger.info("{} -> end Join Reply> AG{} FT{} C{}", me, agView, filetuples, contacts);
+        logger.debug("{} -> end Join Reply> AG{} FT{} C{}", me, agView, filetuples, contacts);
     }
-
 
     private void uponGetFileMessage(GetFileMessage msg, Host from, short sourceProto, int channelId) {
         Host host = filetuples.get(msg.getObjID());
@@ -327,7 +326,7 @@ public class Kelips extends GenericProtocol {
         if (receivedMsg.getOpType()) {
             host = (Host) agView.toArray()[(int) (Math.random() * agView.size())];
             filetuples.put(receivedMsg.getObjID(), host);
-
+            logger.info("{} -> random selected host {}",me,host);
             GetFileReply msgR = new GetFileReply(receivedMsg.getObjID(), receivedMsg.getUid(), host);
             sendMessage(msgR, from);
         } else {
@@ -336,7 +335,7 @@ public class Kelips extends GenericProtocol {
             if (host == null) {//I do not know the file
                 GetFileMessage msg =
                         new GetFileMessage(receivedMsg.getUid(), receivedMsg.getObjID());
-
+                logger.info("NEVER TO BE SEEN REPLY");
                 ongoinglookUp.putIfAbsent(msg.getUid(), agView);
 
                 for (Host h : agView) {
@@ -353,14 +352,11 @@ public class Kelips extends GenericProtocol {
 
     private void uponLookupReplyMessage(GetFileReply msg, Host from, short sourceProto, int channelId) {
         if (ongoinglookUp.containsKey(msg.getUid())) {
-
             if (msg.getHost() == null) {
                 ongoinglookUp.get(msg.getUid()).remove(msg.getHost());
-
                 if (ongoinglookUp.get(msg.getUid()).isEmpty())
                     ongoinglookUp.remove(msg.getUid());
-
-            } else { //if not found - do nothing for now... lets test and see
+            } else {
                 List<Host> hlist = new ArrayList<>();
                 hlist.add(msg.getHost());
                 LookupResponse resp = new LookupResponse(msg.getUid(), msg.getObjID(), hlist);
@@ -414,14 +410,12 @@ public class Kelips extends GenericProtocol {
                     LookupResponse reply =
                             new LookupResponse(lookupRequest.getRequestUID(), lookupRequest.getObjID(), hostList);
                     sendReply(reply, Storage.PROTOCOL_ID);
-                }
+                } //CERTO!!
             }
         } else { // file does not belong my AG
-
             //opType - True if insert/Put; False if retrieve/Get
             //if (lookupRequest.getOpType()) { /*no need to do nothing*/ }
-
-            logger.info("{} -> contacts {}", me, contacts.toString());
+            logger.debug("{} -> contacts {}", me, contacts.toString());
             Set<Host> contact = contacts.get(fAG);
             if (contact != null && contact.size() != 0) {
                 int index = (int) (Math.random() * contact.size());
@@ -430,7 +424,6 @@ public class Kelips extends GenericProtocol {
                 GetDiffAgFileMessage msg =
                         new GetDiffAgFileMessage(lookupRequest.getRequestUID(), lookupRequest.getObjID(),
                                 lookupRequest.getOpType());
-
                 checkConn(c);
                 sendMessage(msg, c);
 

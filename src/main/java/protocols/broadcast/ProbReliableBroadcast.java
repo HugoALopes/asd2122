@@ -101,12 +101,14 @@ public class ProbReliableBroadcast extends GenericProtocol {
             //Deliver the message to the application (even if it came from it)
             //triggerNotification(new DeliverNotification(msg.getMid(), msg.getSender(), msg.getContent()));
             ByteBuf buf = new EmptyByteBuf(ByteBufAllocator.DEFAULT);
+            buf.capacity(msg.getContent().length);
+            //ByteBuf buf = ByteBufAllocator.DEFAULT.buffer(msg.getContent().length);
             buf.writeBytes(msg.getContent());
             sendReply(Serializer.deserialize(buf), Kelips.PROTOCOL_ID);
-            fanout=(int)Math.log(neighbours.size());
+            fanout = (int) Math.log(neighbours.size());
             Random rnd = new Random();
-            Set <Integer> index = new HashSet<>();
-            while (index.size()<fanout)
+            Set<Integer> index = new HashSet<>();
+            while (index.size() < fanout)
                 index.add(rnd.nextInt());
             index.forEach(i -> {
                 Host h = neighboursAUXList.get(i);
