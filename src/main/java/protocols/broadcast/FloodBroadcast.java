@@ -93,11 +93,7 @@ public class FloodBroadcast extends GenericProtocol {
         //If we already received it once, do nothing (or we would end up with a nasty infinite loop)
         if (received.add(msg.getMid())) {
             //Deliver the message to the application (even if it came from it)
-            //triggerNotification(new DeliverNotification(msg.getMid(), msg.getSender(), msg.getContent()));
-
-            ByteBuf buf = Unpooled.copiedBuffer(msg.getContent());
-            //buf.writeBytes(msg.getContent());
-            sendReply(Serializer.deserialize(buf), Kelips.PROTOCOL_ID);
+            triggerNotification(new DeliverNotification(msg.getMid(), msg.getSender(), msg.getContent()));
 
             //Simply send the message to every known neighbour (who will then do the same)
             neighbours.forEach(host -> {

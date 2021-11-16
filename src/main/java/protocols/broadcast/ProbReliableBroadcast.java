@@ -1,17 +1,17 @@
 package protocols.broadcast;
 
+import channel.notifications.ChannelCreated;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.EmptyByteBuf;
 import io.netty.buffer.Unpooled;
-import membership.common.ChannelCreated;
-import membership.common.NeighbourDown;
-import membership.common.NeighbourUp;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import protocols.broadcast.common.BroadcastRequest;
 import protocols.broadcast.common.DeliverNotification;
 import protocols.broadcast.messages.FloodMessage;
+import protocols.broadcast.notifications.NeighbourDown;
+import protocols.broadcast.notifications.NeighbourUp;
 import protocols.dht.kelips.Kelips;
 import protocols.dht.kelips.messages.InformationGossip;
 import pt.unl.fct.di.novasys.babel.core.GenericProtocol;
@@ -53,9 +53,9 @@ public class ProbReliableBroadcast extends GenericProtocol {
         registerRequestHandler(BroadcastRequest.REQUEST_ID, this::uponBroadcastRequest);
 
         /*--------------------- Register Notification Handlers ----------------------------- */
-        //subscribeNotification(NeighbourUp.NOTIFICATION_ID, this::uponNeighbourUp);
-        //subscribeNotification(NeighbourDown.NOTIFICATION_ID, this::uponNeighbourDown);
-        subscribeNotification(ChannelCreated.NOTIFICATION_ID, this::uponChannelCreated);
+        subscribeNotification(protocols.broadcast.notifications.NeighbourUp.NOTIFICATION_ID, this::uponNeighbourUp);
+        subscribeNotification(protocols.broadcast.notifications.NeighbourDown.NOTIFICATION_ID, this::uponNeighbourDown);
+        subscribeNotification(channel.notifications.ChannelCreated.NOTIFICATION_ID, this::uponChannelCreated);
     }
 
     @Override
@@ -85,9 +85,6 @@ public class ProbReliableBroadcast extends GenericProtocol {
     /*--------------------------------- Requests ---------------------------------------- */
     private void uponBroadcastRequest(BroadcastRequest request, short sourceProto) {
         if (!channelReady) return;
-        logger.info("IN BROADCAST CALL");
-        neighbours = request.getGroup();
-        neighbours.forEach(n -> neighboursAUXList.add(n));
 
         //Create the message object.
         FloodMessage msg = new FloodMessage(request.getMsgId(), request.getSender(), sourceProto, request.getMsg());
@@ -99,16 +96,11 @@ public class ProbReliableBroadcast extends GenericProtocol {
     /*--------------------------------- Messages ---------------------------------------- */
     private void uponFloodMessage(FloodMessage msg, Host from, short sourceProto, int channelId) {
         logger.trace("Received {} from {}", msg, from);
-        logger.info("IN Upon FLOOD MSG");
         //If we already received it once, do nothing (or we would end up with a nasty infinite loop)
         if (received.add(msg.getMid())) {
             //Deliver the message to the application (even if it came from it)
-            //triggerNotification(new DeliverNotification(msg.getMid(), msg.getSender(), msg.getContent()));
-            //ByteBuf buf = new EmptyByteBuf(ByteBufAllocator.DEFAULT);
-            //buf.capacity(msg.getContent().length);
-            ByteBuf buf = Unpooled.copiedBuffer(msg.getContent());
-            //buf.writeBytes(msg.getContent());
-            sendReply(Serializer.deserialize(buf), Kelips.PROTOCOL_ID);
+            triggerNotification(new DeliverNotification(msg.getMid(), msg.getSender(), msg.getContent()));
+
             fanout = (int) Math.log(neighbours.size());
             Random rnd = new Random();
             Set<Integer> index = new HashSet<>();
@@ -133,19 +125,17 @@ public class ProbReliableBroadcast extends GenericProtocol {
     /*--------------------------------- Notifications ---------------------------------------- */
 
     //When the membership protocol notifies of a new neighbour (or leaving one) simply update my list of neighbours.
-    /*private void uponNeighbourUp(NeighbourUp notification, short sourceProto) {
-        for(Host h: notification.getNeighbours()) {
-            if(neighbours.add(h))
-                neighboursAUXList.add(h);
-            logger.info("New neighbour: " + h);
+    private void uponNeighbourUp(NeighbourUp notification, short sourceProto) {
+        for (Host h : notification.getNeighbours()) {
+            neighbours.add(h);
+            logger.debug("New neighbour: " + h);
         }
     }
 
     private void uponNeighbourDown(NeighbourDown notification, short sourceProto) {
-        for(Host h: notification.getNeighbours()) {
-            if (neighbours.remove(h))
-                neighboursAUXList.remove(h);
-            logger.info("Neighbour down: " + h);
+        for (Host h : notification.getNeighbours()) {
+            neighbours.remove(h);
+            logger.debug("Neighbour down: " + h);
         }
-    }*/
+    }
 }

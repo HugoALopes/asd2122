@@ -3,6 +3,7 @@ package protocols.dht.kelips;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.EmptyByteBuf;
+import io.netty.buffer.Unpooled;
 import membership.common.ChannelCreated;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -103,7 +104,6 @@ public class Kelips extends GenericProtocol {
         registerMessageHandler(channelId, GetDiffAgFileMessage.MESSAGE_ID, this::uponGetDiffAgFileMessage, this::uponMsgFail);
         registerMessageHandler(channelId, GetFileReply.MESSAGE_ID, this::uponLookupReplyMessage, this::uponMsgFail);
         registerMessageHandler(channelId, GetFileMessageAux.MESSAGE_ID, this::uponGetFileMessageAux, this::uponMsgFail);
-        //registerMessageHandler(channelId, GetFileReplyAux.MESSAGE_ID, this::uponGetFileReplyAux, this::uponMsgFail);
 
         /*--------------------- Register Message Serializers ----------------------------- */
         registerMessageSerializer(channelId, KelipsJoinRequest.MESSAGE_ID, KelipsJoinRequest.serializer);
@@ -118,7 +118,7 @@ public class Kelips extends GenericProtocol {
         registerRequestHandler(LookupRequest.REQUEST_ID, this::uponLookupRequest);
 
         /*--------------------- Register Reply Handlers ----------------------------- */
-        registerReplyHandler(InformationGossip.REPLY_ID, this::uponGossipReply);
+        //registerReplyHandler(InformationGossip.REPLY_ID, this::uponGossipReply);
 
         /*--------------------- Register Timer Handlers ----------------------------- */
         registerTimerHandler(InfoTimer.TIMER_ID, this::uponInfoTime);
@@ -163,16 +163,16 @@ public class Kelips extends GenericProtocol {
         setupPeriodicTimer(new GossipTimer(), 2000, 5000);
     }
 
-    /*--------------------- Notifications subscribed ----------------------------- */
+    /*----------------------------- Notifications subscribed ----------------------------- */
     private void uponDeliver(DeliverNotification not, short sourceProto) {
         Host sender = not.getSender();
 
         BigInteger hash = HashGenerator.generateHash(sender.toString());
         int fromID = (hash.intValue() % this.agNum);
 
-        ByteBuf buf = new EmptyByteBuf(ByteBufAllocator.DEFAULT);
-        buf.writeBytes(not.getMsg());
+        ByteBuf buf = Unpooled.copiedBuffer(not.getMsg());
         InformationGossip ig = Serializer.deserialize(buf);
+
         Map<Integer, Set<Host>> contactsIG = ig.getContacts();
         Set<Host> view = ig.getAgView();
 
@@ -210,7 +210,8 @@ public class Kelips extends GenericProtocol {
         candidates = contactsIG;
     }
 
-    /*--------------------------------- TCP ---------------------------------------- */
+
+    /*---------------------------------------- TCP ---------------------------------------- */
     // If a connection is successfully established, this event is triggered.
     private void uponOutConnectionUp(OutConnectionUp event, int channelId) {
         logger.debug("{} -> In uponOutConnectionUp", me);
@@ -381,7 +382,7 @@ public class Kelips extends GenericProtocol {
         removeContact(fromID, host);
     }
 
-    /*--------------------------------- Requests ---------------------------------------- */
+    /*--------------------------------- Requests --------------------------------- */
     @SuppressWarnings("DuplicatedCode")
     private void uponLookupRequest(LookupRequest lookupRequest, short sourceProto) {
         int fAG = lookupRequest.getObjID().mod(BigInteger.valueOf(agNum)).intValueExact();
@@ -502,7 +503,7 @@ public class Kelips extends GenericProtocol {
         logger.info(sb);
     }
 
-    /* --------------------------------- Utils ---------------------------- */
+    /* --------------------------------- Utils --------------------------------- */
     @SuppressWarnings("DuplicatedCode")
     private void removeContact(int fromID, Host peer) {
         logger.debug("{} -> In remove Contact", me);
