@@ -388,7 +388,7 @@ public class Kelips extends GenericProtocol {
         int fAG = lookupRequest.getObjID().mod(BigInteger.valueOf(agNum)).intValueExact();
         Host host;
         List<Host> hostList = new ArrayList<>();
-        logger.debug("{} -> {} In Upon Lookup {}", me, myAG, fAG);
+        logger.info("{} -> {} In Upon Lookup {}", me, myAG, fAG);
 
         if (fAG == myAG) {
             //opType - True if insert/Put; False if retrieve/Get
