@@ -8,7 +8,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a0bbf4ba-7463-49e9-98fd-bb596853f106" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/protocols/dht/kelips/Kelips.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/dht/kelips/Kelips.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/protocols/storage/Storage.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/storage/Storage.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/protocols/storage/messages/ThereYouGoMessage.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/storage/messages/ThereYouGoMessage.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

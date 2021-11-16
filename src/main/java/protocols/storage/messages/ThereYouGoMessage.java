@@ -84,7 +84,7 @@ public class ThereYouGoMessage extends ProtoMessage {
             int size = in.readInt();
                        
             byte[] objIdArr = new byte[size];
-            if (size > 0) //TODO - devia ser while?
+            if (size > 0)
                 in.readBytes(objIdArr);
             BigInteger objId = new BigInteger(objIdArr);
             size = in.readInt();

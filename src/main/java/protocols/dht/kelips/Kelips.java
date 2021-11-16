@@ -268,7 +268,6 @@ public class Kelips extends GenericProtocol {
             } else {
                 contacts.get(fromID).add(from);
             }
-
             logger.info("{} -> contacts {} added to Contacts", me, contacts.get(fromID));
         }
         //connect(from, Reason.JOIN);
@@ -316,8 +315,8 @@ public class Kelips extends GenericProtocol {
     @SuppressWarnings("DuplicatedCode")
     private void uponGetDiffAgFileMessage(GetDiffAgFileMessage receivedMsg, Host from, short sourceProto, int channelId) {
         Host host;
-
         checkConn(from);
+
         if (receivedMsg.getOpType()) {
             host = (Host) agView.toArray()[(int) (Math.random() * agView.size())];
             filetuples.put(receivedMsg.getObjID(), host);
@@ -325,7 +324,6 @@ public class Kelips extends GenericProtocol {
             GetFileReply msgR = new GetFileReply(receivedMsg.getObjID(), receivedMsg.getUid(), host);
             sendMessage(msgR, from);
         } else {
-
             host = filetuples.get(receivedMsg.getObjID());
 
             if (host == null) {//I do not know the file
@@ -392,7 +390,6 @@ public class Kelips extends GenericProtocol {
                 LookupResponse reply =
                         new LookupResponse(lookupRequest.getRequestUID(), lookupRequest.getObjID(), hostList);
                 sendReply(reply, Storage.PROTOCOL_ID);
-
             } else {
                 host = filetuples.get(lookupRequest.getObjID());
                 if (host == null) {//file on my AG but I do not know it

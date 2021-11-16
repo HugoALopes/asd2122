@@ -106,7 +106,6 @@ public class Storage extends GenericProtocol {
     }
 
     private void findHost(Operation op) {
-
         UUID cont = UUID.randomUUID();
         context.put(cont, op);
         // find "saver" host
@@ -116,7 +115,6 @@ public class Storage extends GenericProtocol {
 
     /*--------------------------------- Requests ---------------------------------------- */
     private void uponStoreRequest(StoreRequest request, short sourceProto) {
-
         if (!channelReady) {
             logger.info("The channel isn't ready to use.");
             return;
@@ -148,8 +146,7 @@ public class Storage extends GenericProtocol {
         if (content == null) {
             findHost(new Operation(false, id, request.getName()));
         } else {
-            // TODO - uuid pode ser random? - provavelmente sim
-            sendReply(new RetrieveOKReply(request.getName(), null, content), APP_PROTOCOL);
+            sendReply(new RetrieveOKReply(request.getName(), UUID.randomUUID(), content), APP_PROTOCOL);
         }
     }
 
@@ -157,18 +154,21 @@ public class Storage extends GenericProtocol {
     @SuppressWarnings("UnnecessaryLocalVariable")
     private void uponLookupResponse(LookupResponse response, short sourceProto) {
         logger.info("Resquest lookup");
-        UUID contID = response.getMid(); //TODO - remove when uuid in response done
+        UUID contID = response.getMid();
         List<Host> hostList = response.getHost();
+        logger.info("UUID:: {}", contID);
+        logger.info("HOST LIST:: {}", hostList);
+        logger.info("WTF:: {}", context.get(contID));
         context.get(contID).setHostList(hostList);
 
         if (context.get(contID).getOpType()) { //True if insert/Put; False if retrieve/Get
             byte[] content = cache.get(response.getObjId()).getContent(); // se isto demorar o objeto pode ja não estar em cache
-            //byte[] content = (cache.get(response.getObjId()) == null) ? store.get(response.getObjId()) : cache.get(response.getObjId()).getContent();
 
             hostList.forEach(host -> {
                 if (host.equals(me)) {
                     store.put(response.getObjId(), content);
                     sendReply(new StoreOKReply(context.get(contID).getName(), contID), APP_PROTOCOL);
+                    context.remove(contID);
                 } else {
                     SaveMessage requestMsg = new SaveMessage(contID, response.getObjId(), host, content);
                     openConnection(host);
@@ -188,8 +188,6 @@ public class Storage extends GenericProtocol {
             GetMessage getMsg = new GetMessage(contID, context.get(contID).getId());
             openConnection(host);
             sendMessage(getMsg, host);
-
-
         }
     }
 
@@ -201,9 +199,8 @@ public class Storage extends GenericProtocol {
 
             if (host.equals(me)) {
                 if (op.nextHost())
-                    host = op.getHost();
+                    h = op.getHost();
             }
-
             GetMessage getMsg = new GetMessage(msg.getUid(), context.get(msg.getUid()).getId());
             //openConnection(h);
             sendMessage(getMsg, h);
@@ -223,15 +220,16 @@ public class Storage extends GenericProtocol {
     }
 
     private void uponSuccessSaveMessage(SuccessSaveMessage msg, Host host, short proto, int channelId) {
-        sendReply(new StoreOKReply(context.get(msg.getUid()).getName(), msg.getUid()), APP_PROTOCOL);
         openConnection(host);
+        sendReply(new StoreOKReply(context.get(msg.getUid()).getName(), msg.getUid()), APP_PROTOCOL);
         context.remove(msg.getUid());
     }
 
     private void uponGetMessage(GetMessage getMsg, Host host, short proto, int channelId) {
         byte[] content = store.get(getMsg.getObjId());
+        openConnection(host);
         if (content != null) {
-            sendMessage(new ThereYouGoMessage(getMsg.getMid(), getMsg.getObjId(), host, store.get(getMsg.getObjId())),
+            sendMessage(new ThereYouGoMessage(getMsg.getMid(), getMsg.getObjId(), host, content),
                     host);
         } else {
             sendMessage(new NoFileInHostMessage(getMsg.getMid()), host);
@@ -239,7 +237,8 @@ public class Storage extends GenericProtocol {
     }
 
     private void uponThereYouGoMessage(ThereYouGoMessage msg, Host host, short proto, int channelId) {
-        sendReply(new RetrieveOKReply(null, msg.getMid(), msg.getContent()), APP_PROTOCOL);
+        sendReply(new RetrieveOKReply(context.get(msg.getMid()).getName(), msg.getMid(), msg.getContent()), APP_PROTOCOL);
+        context.remove(msg.getMid());
     }
 
     private void uponFailGet(GetMessage msg, Host host, short proto, Throwable throwable, int channelId) {
