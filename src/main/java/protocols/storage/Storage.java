@@ -156,12 +156,13 @@ public class Storage extends GenericProtocol {
         logger.info("Resquest lookup");
         UUID contID = response.getMid();
         List<Host> hostList = response.getHost();
-        if (context.get(contID) == null) {return;}
+        if (context.get(contID) == null) {
+            logger.info("USELESS UID");
+            return;
+        }
         context.get(contID).setHostList(hostList);
-
         if (context.get(contID).getOpType()) { //True if insert/Put; False if retrieve/Get
             byte[] content = cache.get(response.getObjId()).getContent(); // se isto demorar o objeto pode ja não estar em cache
-
             hostList.forEach(host -> {
                 if (host.equals(me)) {
                     store.put(response.getObjId(), content);
@@ -173,7 +174,6 @@ public class Storage extends GenericProtocol {
                     sendMessage(requestMsg, host);
                 }
             });
-
         } else {
             Operation op = context.get(contID);
             Host host = op.getHost();
@@ -289,7 +289,6 @@ public class Storage extends GenericProtocol {
                 logger.debug("Item {} removed from cache", id);
             }
         });
-
         for (BigInteger key : aux) {
             cache.remove(key);
         }
