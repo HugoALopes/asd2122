@@ -101,6 +101,8 @@ public class ProbReliableBroadcast extends GenericProtocol {
             //Deliver the message to the application (even if it came from it)
             triggerNotification(new DeliverNotification(msg.getMid(), msg.getSender(), msg.getContent()));
 
+            neighbours.forEach(n -> neighboursAUXList.add(n));
+
             fanout = (int) Math.log(neighbours.size());
             Random rnd = new Random();
             Set<Integer> index = new HashSet<>();

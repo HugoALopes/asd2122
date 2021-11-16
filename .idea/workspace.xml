@@ -8,10 +8,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a0bbf4ba-7463-49e9-98fd-bb596853f106" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/protocols/broadcast/FloodBroadcast.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/broadcast/FloodBroadcast.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/protocols/broadcast/ProbReliableBroadcast.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/broadcast/ProbReliableBroadcast.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/protocols/dht/kelips/Kelips.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/protocols/dht/kelips/Kelips.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -125,7 +122,7 @@
       <workItem from="1637075996424" duration="670000" />
       <workItem from="1637077319561" duration="914000" />
       <workItem from="1637078607906" duration="6399000" />
-      <workItem from="1637087308946" duration="796000" />
+      <workItem from="1637087308946" duration="1210000" />
     </task>
     <servers />
   </component>
