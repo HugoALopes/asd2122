@@ -31,7 +31,7 @@ public class ProbReliableBroadcast extends GenericProtocol {
 
     private final Host myself; //My own address/port
     private Set<Host> neighbours; //My known neighbours (a.k.a peers the membership protocol told me about)
-    private Host[] neighboursAUXList;
+    private List<Host> neighboursAUXList;
     private final Set<UUID> received; //Set of received messages (since we do not want to deliver the same msg twice)
     private int fanout;
 
@@ -45,7 +45,7 @@ public class ProbReliableBroadcast extends GenericProtocol {
         received = new HashSet<>();
         channelReady = false;
         fanout = 0;
-        //neighboursAUXList = new ArrayList<>();
+        neighboursAUXList = new ArrayList<>();
 
 
         /*--------------------- Register Request Handlers ----------------------------- */
@@ -85,7 +85,7 @@ public class ProbReliableBroadcast extends GenericProtocol {
     private void uponBroadcastRequest(BroadcastRequest request, short sourceProto) {
         if (!channelReady) return;
         neighbours = request.getGroup();
-        neighboursAUXList = (Host [])neighbours.toArray();
+        neighbours.forEach(n -> neighboursAUXList.add(n));
         //Create the message object.
         FloodMessage msg = new FloodMessage(request.getMsgId(), request.getSender(), sourceProto, request.getMsg());
 
@@ -109,7 +109,7 @@ public class ProbReliableBroadcast extends GenericProtocol {
             while (index.size()<fanout)
                 index.add(rnd.nextInt());
             index.forEach(i -> {
-                Host h = neighboursAUXList[i];
+                Host h = neighboursAUXList.get(i);
                 if (!h.equals(from)) {
                     logger.trace("Sent {} to {}", msg, h);
                     sendMessage(msg, h);
