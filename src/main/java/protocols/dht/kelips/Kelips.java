@@ -160,7 +160,7 @@ public class Kelips extends GenericProtocol {
         } else
             logger.info("{} -> Do not Contains contact", me);
         agView.add(me);
-        //setupPeriodicTimer(new GossipTimer(), 5000, 20000);
+        setupPeriodicTimer(new GossipTimer(), 5000, 20000);
     }
 
     /*--------------------- Notifications subscribed ----------------------------- */

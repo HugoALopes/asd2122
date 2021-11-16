@@ -76,7 +76,7 @@ public class Main {
         /** You need to uncomment the next two lines when you have protocols to fill those gaps **/
         storage.init(props);
 
-        //gossip.init(props);
+        gossip.init(props);
 
         dht.init(props);
 
