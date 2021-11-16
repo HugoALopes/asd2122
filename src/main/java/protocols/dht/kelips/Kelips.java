@@ -141,14 +141,14 @@ public class Kelips extends GenericProtocol {
         if (properties.containsKey("contact")) {
             try {
                 String contact = properties.getProperty("contact");
-                logger.info("{} -> {} is contact", me, contact);
+                logger.debug("{} -> {} is contact", me, contact);
                 String[] hostElems = contact.split(":");
                 Host contactHost = new Host(InetAddress.getByName(hostElems[0]), Short.parseShort(hostElems[1]));
                 if (contactHost.equals(me)) {
                     agView.add(me);
                     return;
                 } else {
-                    logger.info("{} -> call NEW_JOIN {}", me, contact);
+                    logger.debug("{} -> call NEW_JOIN {}", me, contact);
 
                     checkConn(contactHost);
                     sendMessage(new KelipsJoinRequest(this.me), contactHost);
@@ -158,7 +158,7 @@ public class Kelips extends GenericProtocol {
                 System.exit(-1);
             }
         } else
-            logger.info("{} -> Do not Contains contact", me);
+            logger.debug("{} -> Do not Contains contact", me);
         agView.add(me);
         setupPeriodicTimer(new GossipTimer(), 2000, 5000);
     }
@@ -338,7 +338,7 @@ public class Kelips extends GenericProtocol {
         if (receivedMsg.getOpType()) {
             host = (Host) agView.toArray()[(int) (Math.random() * agView.size())];
             filetuples.put(receivedMsg.getObjID(), host);
-            logger.info("{} -> random selected host {}", me, host);
+            logger.debug("{} -> random selected host {}", me, host);
             GetFileReply msgR = new GetFileReply(receivedMsg.getObjID(), receivedMsg.getUid(), host);
             sendMessage(msgR, from);
         } else {
@@ -388,7 +388,7 @@ public class Kelips extends GenericProtocol {
         int fAG = lookupRequest.getObjID().mod(BigInteger.valueOf(agNum)).intValueExact();
         Host host;
         List<Host> hostList = new ArrayList<>();
-        logger.info("{} -> {} In Upon Lookup {}", me, myAG, fAG);
+        logger.debug("{} -> {} In Upon Lookup {}", me, myAG, fAG);
 
         if (fAG == myAG) {
             //opType - True if insert/Put; False if retrieve/Get

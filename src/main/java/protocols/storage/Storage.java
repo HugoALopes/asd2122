@@ -153,11 +153,11 @@ public class Storage extends GenericProtocol {
     /*--------------------------------- Replies ---------------------------------------- */
     @SuppressWarnings("UnnecessaryLocalVariable")
     private void uponLookupResponse(LookupResponse response, short sourceProto) {
-        logger.info("Resquest lookup");
+        logger.debug("Resquest lookup");
         UUID contID = response.getMid();
         List<Host> hostList = response.getHost();
         if (context.get(contID) == null) {
-            logger.info("USELESS UID");
+            logger.debug("USELESS UID");
             return;
         }
         context.get(contID).setHostList(hostList);
