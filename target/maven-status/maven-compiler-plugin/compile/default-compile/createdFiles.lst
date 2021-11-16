@@ -36,6 +36,7 @@ protocols/timers/CacheDeleteTimer.class
 protocols/dht/kelips/Kelips.class
 protocols/apps/timers/ExitTimer.class
 protocols/timers/GossipTimer.class
+protocols/dht/kelips/messages/GetFileMessageAux.class
 protocols/broadcast/FloodBroadcast.class
 protocols/dht/kademlia/QueryState.class
 protocols/dht/kademlia/messages/KademliaJoinRequest$1.class
@@ -50,6 +51,7 @@ protocols/dht/kelips/Kelips$Reason.class
 protocols/dht/kademlia/Kademlia.class
 protocols/dht/kelips/messages/KelipsJoinRequest$1.class
 protocols/dht/kademlia/messages/KademliaFindNodeRequest$1.class
+protocols/dht/kelips/messages/GetFileMessageAux$1.class
 protocols/storage/requests/StoreRequest.class
 protocols/dht/kademlia/Node.class
 protocols/dht/kelips/messages/InformationGossip.class

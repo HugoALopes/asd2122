@@ -3,6 +3,7 @@ package protocols.broadcast;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.EmptyByteBuf;
+import io.netty.buffer.Unpooled;
 import membership.common.ChannelCreated;
 import membership.common.NeighbourDown;
 import membership.common.NeighbourUp;
@@ -84,6 +85,7 @@ public class ProbReliableBroadcast extends GenericProtocol {
     /*--------------------------------- Requests ---------------------------------------- */
     private void uponBroadcastRequest(BroadcastRequest request, short sourceProto) {
         if (!channelReady) return;
+        logger.info("IN BROADCAST CALL");
         neighbours = request.getGroup();
         neighbours.forEach(n -> neighboursAUXList.add(n));
         //Create the message object.
@@ -96,14 +98,15 @@ public class ProbReliableBroadcast extends GenericProtocol {
     /*--------------------------------- Messages ---------------------------------------- */
     private void uponFloodMessage(FloodMessage msg, Host from, short sourceProto, int channelId) {
         logger.trace("Received {} from {}", msg, from);
+        logger.info("IN Upon FLOOD MSG");
         //If we already received it once, do nothing (or we would end up with a nasty infinite loop)
         if (received.add(msg.getMid())) {
             //Deliver the message to the application (even if it came from it)
             //triggerNotification(new DeliverNotification(msg.getMid(), msg.getSender(), msg.getContent()));
-            ByteBuf buf = new EmptyByteBuf(ByteBufAllocator.DEFAULT);
-            buf.capacity(msg.getContent().length);
-            //ByteBuf buf = ByteBufAllocator.DEFAULT.buffer(msg.getContent().length);
-            buf.writeBytes(msg.getContent());
+            //ByteBuf buf = new EmptyByteBuf(ByteBufAllocator.DEFAULT);
+            //buf.capacity(msg.getContent().length);
+            ByteBuf buf = Unpooled.copiedBuffer(msg.getContent());
+            //buf.writeBytes(msg.getContent());
             sendReply(Serializer.deserialize(buf), Kelips.PROTOCOL_ID);
             fanout = (int) Math.log(neighbours.size());
             Random rnd = new Random();
