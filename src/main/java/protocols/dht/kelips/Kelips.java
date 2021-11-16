@@ -6,9 +6,12 @@ import io.netty.buffer.EmptyByteBuf;
 import membership.common.ChannelCreated;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import protocols.broadcast.FloodBroadcast;
 import protocols.broadcast.ProbReliableBroadcast;
 import protocols.broadcast.common.BroadcastRequest;
 import protocols.broadcast.common.DeliverNotification;
+import protocols.broadcast.notifications.NeighbourDown;
+import protocols.broadcast.notifications.NeighbourUp;
 import protocols.dht.kelips.messages.*;
 import protocols.dht.replies.LookupResponse;
 import protocols.dht.requests.LookupRequest;
@@ -119,7 +122,7 @@ public class Kelips extends GenericProtocol {
 
         /*--------------------- Register Timer Handlers ----------------------------- */
         registerTimerHandler(InfoTimer.TIMER_ID, this::uponInfoTime);
-        //registerTimerHandler(GossipTimer.TIMER_ID, this::broadcastRequest);
+        registerTimerHandler(GossipTimer.TIMER_ID, this::broadcastRequest);
 
         /*--------------------- TCPEvents ----------------------------- */
         registerChannelEventHandler(channelId, OutConnectionUp.EVENT_ID, this::uponOutConnectionUp);
@@ -157,7 +160,7 @@ public class Kelips extends GenericProtocol {
         } else
             logger.info("{} -> Do not Contains contact", me);
         agView.add(me);
-        //setupPeriodicTimer(new GossipTimer(), 2000, 5000);
+        setupPeriodicTimer(new GossipTimer(), 2000, 5000);
     }
 
     /*--------------------- Notifications subscribed ----------------------------- */
@@ -213,7 +216,8 @@ public class Kelips extends GenericProtocol {
         logger.debug("{} -> In uponOutConnectionUp", me);
         Host peer = event.getNode();
         //Set<Reason> reasons = pending.remove(peer);
-        logger.info("{} -> Out Connection to {} is up.", me, peer);
+        logger.debug("{} -> Out Connection to {} is up.", me, peer);
+        triggerNotification(new NeighbourUp(peer));
     }
 
     private void uponOutConnectionDown(OutConnectionDown event, int channelId) {
@@ -224,6 +228,7 @@ public class Kelips extends GenericProtocol {
         int fromID = hash.mod(BigInteger.valueOf(this.agNum)).intValueExact();
         removeContact(fromID, peer);
         connections.remove(event.getNode());
+        triggerNotification(new NeighbourDown(peer));
     }
 
     private void uponOutConnectionFailed(OutConnectionFailed<ProtoMessage> event, int channelId) {
@@ -234,11 +239,13 @@ public class Kelips extends GenericProtocol {
         int fromID = hash.mod(BigInteger.valueOf(this.agNum)).intValueExact();
         removeContact(fromID, peer);
         connections.remove(event.getNode());
+        triggerNotification(new NeighbourDown(peer));
     }
 
     private void uponInConnectionUp(InConnectionUp event, int channelId) {
         Host peer = event.getNode();
         logger.debug("{} -> In Connection from {} is up", me, peer);
+        triggerNotification(new NeighbourUp(peer));
     }
 
     //A connection someone established to me is disconnected.
@@ -251,8 +258,8 @@ public class Kelips extends GenericProtocol {
         logger.debug("{} -> contact list {}", me, contacts.toString());
         removeContact(fromID, peer);
         connections.remove(event.getNode());
+        triggerNotification(new NeighbourDown(peer));
     }
-
 
     /* --------------------------------- Messages --------------------------------- */
 
@@ -553,14 +560,13 @@ public class Kelips extends GenericProtocol {
         }
     }
 
-/*
     private void broadcastRequest(GossipTimer timer, long timerId) {
         InformationGossip msg = new InformationGossip(contacts, filetuples, agView);
         BroadcastRequest request = new BroadcastRequest(UUID.randomUUID(), this.me, Serializer.serialize(msg), agView);
 
         logger.info("Sending: {}  ({})", request.getMsgId(), Serializer.serialize(msg).length);
         //And send it to the dissemination protocol
-        //sendRequest(request, FloodBroadcast.PROTOCOL_ID);
-        sendRequest(request, ProbReliableBroadcast.PROTOCOL_ID);
-    }*/
+        sendRequest(request, FloodBroadcast.PROTOCOL_ID);
+        //sendRequest(request, ProbReliableBroadcast.PROTOCOL_ID);
+    }
 }

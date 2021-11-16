@@ -1,3 +1,4 @@
+protocols/broadcast/notifications/NeighbourDown.class
 protocols/dht/kademlia/messages/KademliaJoinRequest.class
 protocols/storage/CacheContent.class
 protocols/dht/kelips/messages/GetFileReply.class
@@ -8,6 +9,7 @@ protocols/storage/messages/GetMessage.class
 protocols/storage/requests/RetrieveRequest.class
 utils/NodeToHostList.class
 protocols/dht/kademlia/Bucket.class
+protocols/broadcast/notifications/NeighbourUp.class
 membership/common/ChannelCreated.class
 utils/Serializer.class
 protocols/storage/Storage.class

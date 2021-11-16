@@ -1,17 +1,20 @@
 package protocols.broadcast;
 
-import membership.common.ChannelCreated;
-import membership.common.NeighbourDown;
-import membership.common.NeighbourUp;
+import channel.notifications.ChannelCreated;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import protocols.broadcast.common.BroadcastRequest;
 import protocols.broadcast.common.DeliverNotification;
 import protocols.broadcast.messages.FloodMessage;
+import protocols.broadcast.notifications.*;
+import protocols.dht.kelips.Kelips;
 import pt.unl.fct.di.novasys.babel.core.GenericProtocol;
 import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 import pt.unl.fct.di.novasys.network.data.Host;
+import utils.Serializer;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -90,7 +93,11 @@ public class FloodBroadcast extends GenericProtocol {
         //If we already received it once, do nothing (or we would end up with a nasty infinite loop)
         if (received.add(msg.getMid())) {
             //Deliver the message to the application (even if it came from it)
-            triggerNotification(new DeliverNotification(msg.getMid(), msg.getSender(), msg.getContent()));
+            //triggerNotification(new DeliverNotification(msg.getMid(), msg.getSender(), msg.getContent()));
+
+            ByteBuf buf = Unpooled.copiedBuffer(msg.getContent());
+            //buf.writeBytes(msg.getContent());
+            sendReply(Serializer.deserialize(buf), Kelips.PROTOCOL_ID);
 
             //Simply send the message to every known neighbour (who will then do the same)
             neighbours.forEach(host -> {
@@ -114,14 +121,14 @@ public class FloodBroadcast extends GenericProtocol {
     private void uponNeighbourUp(NeighbourUp notification, short sourceProto) {
         for(Host h: notification.getNeighbours()) {
         	neighbours.add(h);
-        	logger.info("New neighbour: " + h);
+        	logger.debug("New neighbour: " + h);
         }
     }
 
     private void uponNeighbourDown(NeighbourDown notification, short sourceProto) {
         for(Host h: notification.getNeighbours()) {
 	    	neighbours.remove(h);
-	        logger.info("Neighbour down: " + h);
+	        logger.debug("Neighbour down: " + h);
 	    }
     }
 }

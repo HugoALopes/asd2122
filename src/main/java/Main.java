@@ -5,6 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import protocols.apps.AutomatedApplication;
+import protocols.broadcast.FloodBroadcast;
 import protocols.broadcast.ProbReliableBroadcast;
 import protocols.dht.kademlia.Kademlia;
 import protocols.dht.kelips.Kelips;
@@ -61,7 +62,8 @@ public class Main {
         //Kademlia dht = new Kademlia(myself, props);
 
         //Gossip
-        ProbReliableBroadcast gossip = new ProbReliableBroadcast(props, myself);
+        FloodBroadcast gossip = new FloodBroadcast(props, myself);
+        //ProbReliableBroadcast gossip = new ProbReliableBroadcast(props, myself);
 
         //Register applications in babel
         babel.registerProtocol(app);

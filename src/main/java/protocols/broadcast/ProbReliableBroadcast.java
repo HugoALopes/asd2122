@@ -88,6 +88,7 @@ public class ProbReliableBroadcast extends GenericProtocol {
         logger.info("IN BROADCAST CALL");
         neighbours = request.getGroup();
         neighbours.forEach(n -> neighboursAUXList.add(n));
+
         //Create the message object.
         FloodMessage msg = new FloodMessage(request.getMsgId(), request.getSender(), sourceProto, request.getMsg());
 
