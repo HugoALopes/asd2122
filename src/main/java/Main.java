@@ -62,8 +62,8 @@ public class Main {
         //Kademlia dht = new Kademlia(myself, props);
 
         //Gossip
-        FloodBroadcast gossip = new FloodBroadcast(props, myself);
-        //ProbReliableBroadcast gossip = new ProbReliableBroadcast(props, myself);
+        //FloodBroadcast gossip = new FloodBroadcast(props, myself);
+        ProbReliableBroadcast gossip = new ProbReliableBroadcast(props, myself);
 
         //Register applications in babel
         babel.registerProtocol(app);

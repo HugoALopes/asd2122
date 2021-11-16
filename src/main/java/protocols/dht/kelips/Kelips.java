@@ -132,7 +132,7 @@ public class Kelips extends GenericProtocol {
         registerChannelEventHandler(channelId, InConnectionDown.EVENT_ID, this::uponInConnectionDown);
 
         /*--------------------- Notifications subscribed ----------------------------- */
-        //subscribeNotification(DeliverNotification.NOTIFICATION_ID, this::uponDeliver);
+        subscribeNotification(DeliverNotification.NOTIFICATION_ID, this::uponDeliver);
     }
 
     @Override
@@ -446,11 +446,12 @@ public class Kelips extends GenericProtocol {
     }
 
     /* --------------------------------- Replies --------------------------------- */
+    /*
     private void uponGossipReply(InformationGossip gossip, short sourceProto) {
         agView = gossip.getAgView();
         filetuples = gossip.getFileTuples();
         contacts = gossip.getContacts();
-    }
+    }*/
 
     /* --------------------------------- Metrics --------------------------------- */
 
@@ -567,7 +568,7 @@ public class Kelips extends GenericProtocol {
 
         logger.info("Sending: {}  ({})", request.getMsgId(), Serializer.serialize(msg).length);
         //And send it to the dissemination protocol
-        sendRequest(request, FloodBroadcast.PROTOCOL_ID);
-        //sendRequest(request, ProbReliableBroadcast.PROTOCOL_ID);
+        //sendRequest(request, FloodBroadcast.PROTOCOL_ID);
+        sendRequest(request, ProbReliableBroadcast.PROTOCOL_ID);
     }
 }
