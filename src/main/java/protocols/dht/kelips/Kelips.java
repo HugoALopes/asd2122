@@ -6,15 +6,19 @@ import io.netty.buffer.EmptyByteBuf;
 import membership.common.ChannelCreated;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import protocols.broadcast.ProbReliableBroadcast;
+import protocols.broadcast.common.BroadcastRequest;
 import protocols.broadcast.common.DeliverNotification;
 import protocols.dht.kelips.messages.*;
 import protocols.dht.replies.LookupResponse;
 import protocols.dht.requests.LookupRequest;
 import protocols.storage.Storage;
+import protocols.timers.GossipTimer;
 import protocols.timers.InfoTimer;
 import pt.unl.fct.di.novasys.babel.core.GenericProtocol;
 import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
+import pt.unl.fct.di.novasys.babel.generic.ProtoReply;
 import pt.unl.fct.di.novasys.channel.tcp.TCPChannel;
 import pt.unl.fct.di.novasys.channel.tcp.events.*;
 import pt.unl.fct.di.novasys.network.data.Host;
@@ -111,9 +115,12 @@ public class Kelips extends GenericProtocol {
         /*--------------------- Register Request Handlers ----------------------------- */
         registerRequestHandler(LookupRequest.REQUEST_ID, this::uponLookupRequest);
 
+        /*--------------------- Register Reply Handlers ----------------------------- */
+        registerReplyHandler(InformationGossip.REPLY_ID, this::uponGossipReply);
+
         /*--------------------- Register Timer Handlers ----------------------------- */
         registerTimerHandler(InfoTimer.TIMER_ID, this::uponInfoTime);
-        //registerTimerHandler(GossipTimer.TIMER_ID, this::broadcastRequest);
+        registerTimerHandler(GossipTimer.TIMER_ID, this::broadcastRequest);
 
         /*--------------------- TCPEvents ----------------------------- */
         registerChannelEventHandler(channelId, OutConnectionUp.EVENT_ID, this::uponOutConnectionUp);
@@ -354,7 +361,6 @@ public class Kelips extends GenericProtocol {
                     ongoinglookUp.remove(msg.getUid());
 
             } else { //if not found - do nothing for now... lets test and see
-
                 List<Host> hlist = new ArrayList<>();
                 hlist.add(msg.getHost());
                 LookupResponse resp = new LookupResponse(msg.getUid(), msg.getObjID(), hlist);
@@ -440,9 +446,14 @@ public class Kelips extends GenericProtocol {
         }
     }
 
+    /* --------------------------------- Replies --------------------------------- */
+    private void uponGossipReply(InformationGossip gossip, short sourceProto) {
+        agView = gossip.getAgView();
+        filetuples = gossip.getFileTuples();
+        contacts = gossip.getContacts();
+    }
 
-
-    /* --------------------------------- Metrics ---------------------------- */
+    /* --------------------------------- Metrics --------------------------------- */
 
     // If we setup the InfoTimer in the constructor, this event will be triggered
     // periodically.
@@ -553,8 +564,9 @@ public class Kelips extends GenericProtocol {
         temp.forEach(i -> filetuples.remove(i));
 
         closeConnection(peer);
+        connections.remove(peer);
         logger.info("{} -> end of remove contact", me);
-        System.exit(-1);
+        //System.exit(-1);
     }
 
     private void checkConn(Host h) {
@@ -564,14 +576,14 @@ public class Kelips extends GenericProtocol {
         }
     }
 
-/*
+
     private void broadcastRequest(GossipTimer timer, long timerId) {
         InformationGossip msg = new InformationGossip(contacts, filetuples, agView);
-        BroadcastRequest request = new BroadcastRequest(UUID.randomUUID(), this.me, Serializer.serialize(msg));
+        BroadcastRequest request = new BroadcastRequest(UUID.randomUUID(), this.me, Serializer.serialize(msg), agView);
 
         logger.info("Sending: {}  ({})", request.getMsgId(), Serializer.serialize(msg).length);
         //And send it to the dissemination protocol
         //sendRequest(request, FloodBroadcast.PROTOCOL_ID);
         sendRequest(request, ProbReliableBroadcast.PROTOCOL_ID);
-    }*/
+    }
 }

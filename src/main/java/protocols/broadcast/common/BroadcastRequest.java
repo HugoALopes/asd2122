@@ -1,5 +1,6 @@
 package protocols.broadcast.common;
 
+import java.util.Set;
 import java.util.UUID;
 
 import pt.unl.fct.di.novasys.babel.generic.ProtoRequest;
@@ -12,12 +13,14 @@ public class BroadcastRequest extends ProtoRequest {
     private final Host sender;
     private final UUID msgId;
     private final byte[] msg;
+    private final Set<Host> group;
 
-    public BroadcastRequest(UUID msgId, Host sender, byte[] msg) {
+    public BroadcastRequest(UUID msgId, Host sender, byte[] msg, Set<Host> group) {
         super(REQUEST_ID);
         this.msgId = msgId;
         this.sender = sender;
         this.msg = msg;
+        this.group=group;
     }
 
     public Host getSender() {
@@ -32,4 +35,7 @@ public class BroadcastRequest extends ProtoRequest {
         return msg;
     }
 
+    public Set<Host> getGroup() {
+        return group;
+    }
 }

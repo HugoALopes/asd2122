@@ -156,9 +156,7 @@ public class Storage extends GenericProtocol {
         logger.info("Resquest lookup");
         UUID contID = response.getMid();
         List<Host> hostList = response.getHost();
-        logger.info("UUID:: {}", contID);
-        logger.info("HOST LIST:: {}", hostList);
-        logger.info("WTF:: {}", context.get(contID));
+        if (context.get(contID) == null) {return;}
         context.get(contID).setHostList(hostList);
 
         if (context.get(contID).getOpType()) { //True if insert/Put; False if retrieve/Get
