@@ -46,10 +46,11 @@ public class Main {
         Host myself = new Host(InetAddress.getByName(props.getProperty("address")),
                 Integer.parseInt(props.getProperty("port")));
 
+        /*
         String contact = props.getProperty("contact");
         String[] hostElems = contact.split(":");
         props.setProperty("contact", props.getProperty("address") + ":" + hostElems[1]);
-
+        */
 
         logger.info("Hello, I am {}", myself);
 
